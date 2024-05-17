@@ -1,4 +1,4 @@
-import { toVersion, ByteReader, toStringAccessFlags, parseConstantPool, getThisClassName } from "./utils";
+import { toVersion, ByteReader, toStringAccessFlags, parseConstantPool, getClassName, parseInterfaces, type ConstantUtf8Info } from "./utils";
 
 function readBytes(buffer: ArrayBuffer) {
   const dv = new DataView(buffer);
@@ -9,9 +9,10 @@ function readBytes(buffer: ArrayBuffer) {
   const constantPoolCount = br.getUint16();
   const constantPool = parseConstantPool(br, constantPoolCount);
   const accessFlags = br.getUint16();
-  const thisClass = br.getUint8();
-  const superClass = br.getUint8();
-  const interfacesCount = br.getUint8();
+  const thisClass = br.getUint16();
+  const superClass = br.getUint16();
+  const interfacesCount = br.getUint16();
+  const interfaces = parseInterfaces(br, interfacesCount, constantPool);
 
   console.log(`
     Magic: ${magic}
@@ -19,11 +20,12 @@ function readBytes(buffer: ArrayBuffer) {
     majorVersion: ${toVersion(major)}
     cpCount: ${constantPoolCount}
     accessFlags: ${toStringAccessFlags(accessFlags)}
-    thisClass: ${getThisClassName(thisClass, constantPool)}
-    superClass: ${(superClass)}
+    thisClass: ${getClassName(thisClass, constantPool)}
+    superClass: ${getClassName(superClass, constantPool)}
     interfacesCount: ${interfacesCount}
     `.split("\n").map(it => it.trim()).filter(it => it.length !== 0).join("\n"))
   console.table(constantPool);
+  console.table(interfaces.map(it => constantPool[it.nameIndex - 1] as ConstantUtf8Info).map(it => Buffer.from(it.bytes).toString("utf8")));
 }
 
 
