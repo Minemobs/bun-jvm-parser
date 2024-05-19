@@ -1,4 +1,6 @@
-import { toVersion, ByteReader, toStringAccessFlags, parseConstantPool, getClassName, parseInterfaces, type ConstantUtf8Info } from "./utils";
+import { parseConstantPool, type ConstantUtf8Info } from "./constantpool";
+import { ByteReader } from "./types";
+import { toVersion, toStringAccessFlags, getClassName, parseInterfaces } from "./utils";
 
 function readBytes(buffer: ArrayBuffer) {
   const dv = new DataView(buffer);
