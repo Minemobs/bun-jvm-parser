@@ -2,6 +2,9 @@ type u1 = number;
 type u2 = number;
 type u4 = number;
 
+// Only for documentation purposes, doesn't do anything
+type Between<T, _minInclusive, _maxInclusive> = T;
+
 export function toVersion(majorVersion: number): number | string {
   if (majorVersion < 45) return NaN;
   if (majorVersion === 49) return 5;
@@ -57,6 +60,9 @@ export class ByteReader {
   }
 }
 
+type ConstantPool = Array<CPInfo<number> & Record<string, number | number[]>>;
+type Attributes = Array<AttributeInfo & Record<string, number | number[]>>;
+
 export function parseInterfaces(br: ByteReader, count: number, constantPool: ReturnType<typeof parseConstantPool>): Array<ConstantClassInfo> {
   const array: ConstantClassInfo[] = [];
   for(let i = 0; i < count; i++) {
@@ -66,17 +72,25 @@ export function parseInterfaces(br: ByteReader, count: number, constantPool: Ret
   return array;
 }
 
-export function parseConstantPool(br: ByteReader, count: number): Array<CPInfo<number> & Record<string, number | number[]>> {
-  const array: ReturnType<typeof parseConstantPool> = [];
-  for(let i = 0; i < count - 1; i++) {
+export function parseFields(br: ByteReader, count: number, constantPool: ConstantPool) {
+
+}
+
+export function parseAttributes(br: ByteReader, count: number, constantPool: ConstantPool) {
+
+}
+
+export function parseConstantPool(br: ByteReader, count: number): ConstantPool {
+  const array: ConstantPool = [];
+  for (let i = 0; i < count - 1; i++) {
     const tag = br.getUint8();
-    if(tag === ConstantPoolTypes.long || tag === ConstantPoolTypes.double) i++;
+    if (tag === ConstantPoolTypes.long || tag === ConstantPoolTypes.double) i++;
     array.push(readConstantPool(br, tag));
   }
   return array;
 }
 
-function readConstantPool(br: ByteReader, tag: ConstantPoolTypes): CPInfo<number> & Record<string, number | number[]> {
+function readConstantPool(br: ByteReader, tag: ConstantPoolTypes): ConstantPool[number] {
   switch(tag) {
     case ConstantPoolTypes.class:
       return { tag, nameIndex: br.getUint16() } as ConstantClassInfo;
@@ -111,6 +125,8 @@ function readConstantPool(br: ByteReader, tag: ConstantPoolTypes): CPInfo<number
       throw Error("Unexpected tag: " + tag + " at byte offset: " + (br.offset - 1));
   }
 }
+
+// ConstantPool
 
 export const enum ConstantPoolTypes {
   class = 7,
@@ -197,3 +213,90 @@ export type ConstantInvokeDynamicInfo = CPInfo<ConstantPoolTypes.invokeDynamic> 
   bootstrapMethodAttrIndex: u2;
   nameAndTypeIndex: u2;
 };
+
+// Attributes
+
+export type AttributeInfo = {
+  attributeNameIndex: u2;
+  attributeLength: u4;
+};
+
+export type ConstantValueAttribute = AttributeInfo & {
+  constantValueIndex: u2;
+};
+
+export type CodeAttribute = AttributeInfo & {
+  maxStack: u2;
+  maxLocals: u2;
+  codeLength: u4;
+  code: u1[];
+  exceptionTableLength: u2;
+  exceptionTable: ExceptionTable[];
+  attributesCount: u2;
+  attributes: Attributes[];
+};
+
+
+export type StackMapTableAttribute = AttributeInfo & {
+  numberOfEntries: u2;
+  entries: StackMapFrame[];
+};
+
+// Fields
+
+export type FieldInfo = {
+  accessFlags: u2;
+  nameIndex: u2;
+  descriptorIndex: u2;
+  attributesCount: u2;
+  attributes: Attributes;
+};
+
+// Other
+type VerificationType<T> = { tag: T };
+type TopVariableInfo = VerificationType<0>;
+type IntergerVariableInfo = VerificationType<1>;
+type FloatVariableInfo = VerificationType<2>;
+type LongVariableInfo = VerificationType<4>;
+type DoubleVariableInfo = VerificationType<3>;
+type NullVariableInfo = VerificationType<5>;
+type UninitializedThisVariableInfo = VerificationType<6>;
+type ObjectVariableInfo = VerificationType<7> & { cpoolIndex: u2 };
+type UninitializedVariableInfo = VerificationType<8> & { offset: u2 };
+
+type VerificationTypeInfo =
+  TopVariableInfo |
+  IntergerVariableInfo |
+  FloatVariableInfo |
+  LongVariableInfo |
+  DoubleVariableInfo |
+  NullVariableInfo |
+  UninitializedThisVariableInfo |
+  ObjectVariableInfo |
+  UninitializedVariableInfo;
+
+type Frame<T> = { frameType: T };
+type SameFrame = Frame<Between<u1, 0, 63>>;
+type SameLocals1StackItemFrame = Frame<Between<u1, 64, 127>> & { stack: VerificationTypeInfo[] /* Length = 1 */ };
+type SameLocals1StackItemFrameExtended = Frame<247> & { offsetDelta: u2, stack: VerificationTypeInfo[] /* Length = 1 */ };
+type ChopFrame = Frame<Between<u1, 248, 250>> & { offsetDelta: u2 };
+type SameFrameExtended = Frame<251> & { offsetDelta: u2 };
+type AppendFrame = Frame<Between<u1, 252, 254>> & { offsetDelta: u2, locals: VerificationTypeInfo[] /* Length = this.frameType - 251 ~= [1; 3] */ }
+type FullFrame = Frame<255> & { offsetDelta: u2, numberOfLocals: u2, locals: VerificationTypeInfo[], numberOfStackItems: u2, stack: VerificationTypeInfo[] };
+
+type StackMapFrame =
+  SameFrame |
+  SameLocals1StackItemFrame |
+  SameLocals1StackItemFrameExtended |
+  ChopFrame |
+  SameFrameExtended |
+  AppendFrame |
+  FullFrame;
+
+type ExceptionTable = {
+  startPC: u2;
+  endPC: u2;
+  handlerPC: u2;
+  catchType: u2;
+};
+

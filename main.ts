@@ -13,6 +13,7 @@ function readBytes(buffer: ArrayBuffer) {
   const superClass = br.getUint16();
   const interfacesCount = br.getUint16();
   const interfaces = parseInterfaces(br, interfacesCount, constantPool);
+  const fieldsCount = br.getUint16();
 
   console.log(`
     Magic: ${magic}
@@ -23,6 +24,7 @@ function readBytes(buffer: ArrayBuffer) {
     thisClass: ${getClassName(thisClass, constantPool)}
     superClass: ${getClassName(superClass, constantPool)}
     interfacesCount: ${interfacesCount}
+    fieldsCount: ${fieldsCount}
     `.split("\n").map(it => it.trim()).filter(it => it.length !== 0).join("\n"))
   console.table(constantPool);
   console.table(interfaces.map(it => constantPool[it.nameIndex - 1] as ConstantUtf8Info).map(it => Buffer.from(it.bytes).toString("utf8")));
