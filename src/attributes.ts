@@ -15,7 +15,7 @@ function readVerificationType(br: ByteReader): VerificationTypeInfo {
   return { tag: tag as 0 };
 }
 
-function readStackMapFrame(br: ByteReader, constantPool: ConstantPool): StackMapFrame {
+function readStackMapFrame(br: ByteReader): StackMapFrame {
   const frameType = br.getUint8();
   if(frameType >= 0 && frameType <= 63) return { frameType };
   if(frameType >= 64 && frameType <= 127) return { frameType, stack: [readVerificationType(br)] };
@@ -42,7 +42,7 @@ function readStackMapFrame(br: ByteReader, constantPool: ConstantPool): StackMap
   throw Error("Unknown frame type");
 }
 
-function readExceptionTable(br: ByteReader, length: u2): ExceptionTable {
+function readExceptionTable(br: ByteReader, _: u2): ExceptionTable {
   return {
     startPC: br.getUint16(),
     endPC: br.getUint16(),
@@ -76,6 +76,62 @@ function readCodeAttribute(br: ByteReader, constantPool: ConstantPool, { attribu
   }
 }
 
+function readInnerClassAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): InnerClassesAttribute {
+  const numberOfClasses = br.getUint8();
+  const classes: Classes[] = [];
+  for(let i = 0; i < numberOfClasses; i++) {
+    classes.push({
+      innerClassInfoIndex: br.getUint16(),
+      outerClassInfoIndex: br.getUint16(),
+      innerNameIndex: br.getUint16(),
+      innerClassAccessFlags: br.getUint16(),
+    });
+  }
+  return {
+    attributeNameIndex,
+    attributeLength,
+    numberOfClasses,
+    classes
+  }
+}
+
+function readLineNumberTableAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): LineNumberTableAttribute {
+  const lineNumberTableLength = br.getUint16();
+  const lineNumberTable: LineNumberTableAttribute["lineNumberTable"] = [];
+  for(let i = 0; i < lineNumberTableLength; i++) {
+    lineNumberTable.push({
+      startPC: br.getUint16(),
+      lineNumber: br.getUint16()
+    });
+  }
+  return {
+    attributeNameIndex,
+    attributeLength,
+    lineNumberTableLength,
+    lineNumberTable
+  }
+}
+
+function readLocalVariableTableAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): LocalVariableTableAttribute {
+  const localVariableTableLength = br.getUint16();
+  const localVariableTable: LocalVariableTable[] = [];
+  for(let i = 0; i < localVariableTableLength; i++) {
+    localVariableTable.push({
+      startPC: br.getUint16(),
+      length: br.getUint16(),
+      nameIndex: br.getUint16(),
+      descriptorIndex: br.getUint16(),
+      index: br.getUint16()
+    });
+  }
+  return {
+    attributeNameIndex,
+    attributeLength,
+    localVariableTableLength,
+    localVariableTable
+  }
+}
+
 export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attributes[number] {
   const nameIndex = br.getUint16();
   const length = br.getUint32();
@@ -91,7 +147,7 @@ export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attri
       const smtAttribute = obj as StackMapTableAttribute;
       smtAttribute.numberOfEntries = br.getUint16();
       smtAttribute.entries = [];
-      for(let i = 0; i < smtAttribute.numberOfEntries; i++) smtAttribute.entries.push(readStackMapFrame(br, constantPool));
+      for(let i = 0; i < smtAttribute.numberOfEntries; i++) smtAttribute.entries.push(readStackMapFrame(br));
       break;
     case "Exceptions":
       const excAttribute = obj as ExceptionsAttribute;
@@ -99,7 +155,31 @@ export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attri
       excAttribute.exceptionIndexTable = br.getUint8();
       break;
     case "InnerClasses":
+      return readInnerClassAttribute(br, obj);
+    case "EnclosingMethod":
+      const encAttribute = obj as EnclosingMethodAttribute;
+      encAttribute.classIndex = br.getUint16();
+      encAttribute.methodIndex = br.getUint16();
       break;
+    case "Synthetic":
+      break;
+    case "Signature":
+      //TODO: read jvms8.pdf#%5B%7B%22num%22%3A906%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C72%2C146%2Cnull%5D
+      const sigAttribute = obj as SignatureAttribute;
+      sigAttribute.signatureIndex = br.getUint16();
+      break;
+    case "SourceFile":
+      const souAttribute = obj as SourceFileAttribute;
+      souAttribute.sourceFileIndex = br.getUint16();
+      break;
+    case "SourceDebugExtension":
+      const sdeAttribute = obj as SourceDebugExtensionAttribute;
+      sdeAttribute.debugExtension = br.getUint8s(obj.attributeLength);
+      break;
+    case "LineNumberTable":
+      return readLineNumberTableAttribute(br, obj);
+    case "LocalVariableTable":
+      return readLocalVariableTableAttribute(br, obj);
   }
   return obj;
 }
@@ -156,13 +236,13 @@ type SourceDebugExtensionAttribute = AttributeInfo & {
   debugExtension: ArrayWithLength<u1, AttributeInfo["attributeLength"]>
 };
 
-type LineNumberAttribute = AttributeInfo & {
+type LineNumberTableAttribute = AttributeInfo & {
   lineNumberTableLength: u2;
   lineNumberTable: LineNumberTable[];
 };
 
 type LocalVariableTableAttribute = AttributeInfo & {
-  localVaraibleTableLength: u2;
+  localVariableTableLength: u2;
   localVariableTable: LocalVariableTable[];
 };
 

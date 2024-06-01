@@ -24,10 +24,17 @@ export class ByteReader {
   getUint16(littleEndian?: boolean) { const data = this.#dv.getUint16(this.offset, littleEndian); this.offset += 2; return data; }
   getUint32(littleEndian?: boolean) { const data = this.#dv.getUint32(this.offset, littleEndian); this.offset += 4; return data; }
   getUint8() { const data = this.#dv.getUint8(this.offset); this.offset += 1; return data; }
-  getUint8s(amount: number): number[] {
+  getUint8s(amount: number): u1[] {
     const data: number[] = [];
     for(let i = 0; i < amount; i++) {
       data.push(this.getUint8());
+    }
+    return data;
+  }
+  getUint16s(amount: number): u2[] {
+    const data: number[] = [];
+    for(let i = 0; i < amount; i++) {
+      data.push(this.getUint16());
     }
     return data;
   }
