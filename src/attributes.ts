@@ -132,6 +132,106 @@ function readLocalVariableTableAttribute(br: ByteReader, { attributeNameIndex, a
   }
 }
 
+function readLocalVariableTypeTableAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): LocalVariableTypeTableAttribute {
+  const localVariableTypeTableLength = br.getUint16();
+  const localVariableTypeTable: LocalVariableTypeTable[] = [];
+  for(let i = 0; i < localVariableTypeTableLength; i++) {
+    localVariableTypeTable.push({
+      startPC: br.getUint16(),
+      length: br.getUint16(),
+      nameIndex: br.getUint16(),
+      signatureIndex: br.getUint16(),
+      index: br.getUint16()
+    });
+  }
+  return {
+    attributeNameIndex,
+    attributeLength,
+    localVariableTypeTableLength,
+    localVariableTypeTable
+  }
+}
+
+function readRuntimeVisibleAnnotationsAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): RuntimeVisibleAnnotationsAttribute {
+  const numAnnotations = br.getUint16();
+  const annotations: Annotation[] = [];
+  for(let i = 0; i < numAnnotations; i++) {
+    annotations.push(readAnnotation(br));
+  }
+  return {
+    attributeNameIndex,
+    attributeLength,
+    numAnnotations,
+    annotations
+  }
+}
+
+function readAnnotation(br: ByteReader): Annotation {
+  const typeIndex = br.getUint16();
+  const numElementValuePairs = br.getUint16();
+  const elementValuePairs: ElementValuePairs[] = [];
+  for(let i = 0; i < numElementValuePairs; i++) {
+    const elementNameIndex = br.getUint16();
+    const value = readElementValue(br);
+    elementValuePairs.push({
+      elementNameIndex,
+      value
+    });
+  }
+
+  return {
+    typeIndex,
+    numElementValuePairs,
+    elementValuePairs
+  }
+}
+
+function readElementValue(br: ByteReader): ElementValue {
+  const tag = br.getUint8();
+  type UnionType = u2 | { typeNameIndex: u2, constNameIndex: u2 } | Annotation | { numValues: u2, values: ElementValue[] };
+  const value: UnionType = readElementValueUnion(br, String.fromCharCode(tag) as ElementValueTags);
+  return {
+    tag,
+    value
+  }
+}
+
+function readElementValueUnion(br: ByteReader, tag: ElementValueTags) {
+  switch(tag) {
+    // Doing a fallthrough because all primitives types (String included) only use a u2
+    case ElementValueTags.BYTE:
+    case ElementValueTags.CHAR:
+    case ElementValueTags.DOUBLE:
+    case ElementValueTags.FLOAT:
+    case ElementValueTags.INT:
+    case ElementValueTags.LONG:
+    case ElementValueTags.SHORT:
+    case ElementValueTags.BOOLEAN:
+    case ElementValueTags.STRING:
+      return br.getUint16();
+    case ElementValueTags.ENUM:
+      return {
+        typeNameIndex: br.getUint16(),
+        constNameIndex: br.getUint16()
+      }
+    case ElementValueTags.CLASS:
+      return br.getUint16()
+    case ElementValueTags.ANNOTATION:
+      return readAnnotation(br);
+    case ElementValueTags.ARRAY:
+      const numValues = br.getUint16();
+      const elementValues: ElementValue[] = [];
+      for(let i = 0; i < numValues; i++) {
+        elementValues.push(readElementValue(br));
+      }
+      
+      return {
+        numValues,
+        values: elementValues
+      }
+  }
+}
+
 export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attributes[number] {
   const nameIndex = br.getUint16();
   const length = br.getUint32();
@@ -180,6 +280,15 @@ export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attri
       return readLineNumberTableAttribute(br, obj);
     case "LocalVariableTable":
       return readLocalVariableTableAttribute(br, obj);
+    case "LocalVariableTypeTable":
+      return readLocalVariableTypeTableAttribute(br, obj);
+    case "Deprecated":
+      return obj;
+    case "RuntimeVisibleAnnotations":
+      return readRuntimeVisibleAnnotationsAttribute(br, obj);
+    case "RuntimeInvisibleAnnotations":
+      // The parsing code is the same, this is why we are using the same function
+      return readRuntimeVisibleAnnotationsAttribute(br, obj);
   }
   return obj;
 }
@@ -446,3 +555,20 @@ type ExceptionTable = {
   catchType: u2;
 };
 
+const enum ElementValueTags {
+  // Primitives
+  BYTE = "B",
+  CHAR = "C",
+  DOUBLE = "D",
+  FLOAT = "F",
+  INT = "I",
+  LONG = "J",
+  SHORT = "S",
+  BOOLEAN = "Z",
+  // Classes
+  STRING = "s",
+  ENUM = "e",
+  CLASS = "c",
+  ANNOTATION = "@",
+  ARRAY = "["
+}
