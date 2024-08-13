@@ -154,23 +154,25 @@ function readLocalVariableTypeTableAttribute(br: ByteReader, { attributeNameInde
 
 function readRuntimeVisibleAnnotationsAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): RuntimeVisibleAnnotationsAttribute {
   const numAnnotations = br.getUint16();
-  const annotations: Annotation[] = [];
-  for(let i = 0; i < numAnnotations; i++) {
-    annotations.push(readAnnotation(br));
-  }
   return {
     attributeNameIndex,
     attributeLength,
     numAnnotations,
-    annotations
+    annotations: readAnnotations(br, numAnnotations)
   }
 }
 
-function readAnnotation(br: ByteReader): Annotation {
-  const typeIndex = br.getUint16();
-  const numElementValuePairs = br.getUint16();
+function readAnnotations(br: ByteReader, numAnnotations: u2): Annotation[] {
+  const annotations: Annotation[] = [];
+  for(let i = 0; i < numAnnotations; i++) {
+    annotations.push(readAnnotation(br));
+  }
+  return annotations;
+}
+
+function readElementValuePairs(br: ByteReader, length: u2): ElementValuePairs[] {
   const elementValuePairs: ElementValuePairs[] = [];
-  for(let i = 0; i < numElementValuePairs; i++) {
+  for(let i = 0; i < length; i++) {
     const elementNameIndex = br.getUint16();
     const value = readElementValue(br);
     elementValuePairs.push({
@@ -178,7 +180,13 @@ function readAnnotation(br: ByteReader): Annotation {
       value
     });
   }
+  return elementValuePairs;
+}
 
+function readAnnotation(br: ByteReader): Annotation {
+  const typeIndex = br.getUint16();
+  const numElementValuePairs = br.getUint16();
+  const elementValuePairs = readElementValuePairs(br, numElementValuePairs);
   return {
     typeIndex,
     numElementValuePairs,
@@ -231,6 +239,177 @@ function readElementValueUnion(br: ByteReader, tag: ElementValueTags) {
       }
   }
 }
+
+function readRuntimeVisibleParameterAnnotationsAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): RuntimeVisibleParameterAnnotationsAttribute {
+  const numParameters = br.getUint16();
+  const parameterAnnotations: { numAnnotations: u2, annotations: Annotation[] }[] = [];
+  for(let i = 0; i < numParameters; i++) {
+    const numAnnotations = br.getUint16();
+    parameterAnnotations.push({
+      numAnnotations,
+      annotations: readAnnotations(br, numAnnotations),
+    });
+  }
+  return {
+    attributeNameIndex,
+    attributeLength,
+    numParameters,
+    parameterAnnotations
+  }
+}
+
+function readTables(br: ByteReader, length: u2): Table[] {
+  const tables: Table[] = [];
+  for(let i = 0; i < length; i++) {
+    tables.push({
+      startPC: br.getUint16(),
+      length: br.getUint16(),
+      index: br.getUint16()
+    });
+  }
+  return tables;
+}
+
+function readTypeAnnotation(br: ByteReader): TypeAnnotation {
+  const targetType = br.getUint8();
+  let targetInfo: TargetInfo = {};
+  switch(targetType) {
+    case 0x00:
+    case 0x01:
+      targetInfo = { typeParameterIndex: br.getUint8() } as TypeParameterTarget;
+      break;
+    case 0x10:
+      targetInfo = { superTypeIndex: br.getUint16() } as SuperTypeTarget;
+      break;
+    case 0x11:
+    case 0x12:
+      targetInfo = { typeParameterIndex: br.getUint8(), boundIndex: br.getUint8() } as TypeParameterBoundTarget;
+      break;
+    case 0x13:
+    case 0x14:
+    case 0x15:
+      targetInfo = {} as EmptyTarget;
+      break;
+    case 0x16:
+      targetInfo = { formalParameterIndex: br.getUint8() } as FormalParameterTarget;
+      break;
+    case 0x17:
+      targetInfo = { throwsTypeIndex: br.getUint16() } as ThrowsTarget;
+      break;
+    case 0x40:
+    case 0x41:
+      {
+        const tableLength = br.getUint16();
+        const table: Table[] = readTables(br, tableLength);
+        targetInfo = { tableLength, table } as LocalvarTarget;
+      }
+      break;
+    case 0x42:
+      targetInfo = { exceptionTableIndex: br.getUint16() } as CatchTarget;
+      break;
+    case 0x43:
+    case 0x44:
+    case 0x45:
+    case 0x46:
+      targetInfo = { offset: br.getUint16() } as OffsetTarget;
+      break;
+    case 0x47:
+    case 0x48:
+    case 0x49:
+    case 0x4A:
+    case 0x4B:
+      targetInfo = { offset: br.getUint16(), typeArgumentIndex: br.getUint8() } as TypeArgumentTarget;
+      break;
+    default: throw Error("Unknown targetType");
+  }
+  const pathLength = br.getUint8();
+  const paths: Path[] = [];
+  for(let i = 0; i < pathLength; i++) {
+    paths.push({
+      typePathKind: br.getUint8(),
+      typeArgumentIndex: br.getUint8()
+    });
+  }
+  const targetPath: TypePath = {
+    pathLength,
+    path: paths
+  };
+  const typeIndex = br.getUint16();
+  const numElementValuePairs = br.getUint16();
+  const elementValuePairs = readElementValuePairs(br, numElementValuePairs);
+  return {
+    targetType,
+    targetInfo,
+    targetPath,
+    typeIndex,
+    numElementValuePairs,
+    elementValuePairs
+  }
+}
+
+function readRuntimeVisibleTypeAnnotationsAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): RuntimeVisibleTypeAnnotationsAttribute {
+  const numAnnotations = br.getUint16();
+  const annotations: TypeAnnotation[] = [];
+  for(let i = 0; i < numAnnotations; i++) {
+    annotations.push(readTypeAnnotation(br));
+  }
+  return {
+    attributeNameIndex,
+    attributeLength,
+    numAnnotations,
+    annotations
+  }
+}
+
+function readAnnotationDefaultAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): AnnotationDefaultAttribute {
+  return {
+    attributeNameIndex,
+    attributeLength,
+    defaultValue: readElementValue(br)
+  };
+}
+
+
+function readBootstrapMethodsAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): BootstrapMethodsAttribute {
+  const numBootstrapMethods = br.getUint16();  
+  const bootstrapMethods: BootstrapMethods[] = [];
+  for(let i = 0; i < numBootstrapMethods; i++) {
+    const bootstrapMethodRef = br.getUint16();
+    const numBootstrapArguments = br.getUint16();
+    const bootstrapArguments = br.getUint16s(numBootstrapArguments);
+    bootstrapMethods.push({
+      bootstrapMethodRef,
+      numBootstrapArguments,
+      bootstrapArguments
+    });
+  }
+  return {
+    attributeNameIndex,
+    attributeLength,
+    numBootstrapMethods,
+    bootstrapMethods
+  };
+}
+
+function readMethodParametersAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): MethodParameters {
+  const parametersCount = br.getUint8();
+  const parameters: Parameters[] = [];
+  for(let i = 0; i < parametersCount; i++) {
+    const nameIndex = br.getUint16();
+    const accessFlags = br.getUint16();
+    parameters.push({
+      nameIndex,
+      accessFlags
+    });
+  }
+  return {
+    attributeNameIndex,
+    attributeLength,
+    parametersCount,
+    parameters
+  };
+}
+
 
 export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attributes[number] {
   const nameIndex = br.getUint16();
@@ -289,6 +468,22 @@ export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attri
     case "RuntimeInvisibleAnnotations":
       // The parsing code is the same, this is why we are using the same function
       return readRuntimeVisibleAnnotationsAttribute(br, obj);
+    case "RuntimeVisibleParameterAnnotations":
+      return readRuntimeVisibleParameterAnnotationsAttribute(br, obj);
+    case "RuntimeInvisibleParameterAnnotations":
+      return readRuntimeVisibleParameterAnnotationsAttribute(br, obj);
+    case "RuntimeVisibleTypeAnnotations":
+      return readRuntimeVisibleTypeAnnotationsAttribute(br, obj);
+    case "RuntimeInvisibleTypeAnnotations":
+      return readRuntimeVisibleTypeAnnotationsAttribute(br, obj);
+    case "AnnotationDefault":
+      return readAnnotationDefaultAttribute(br, obj);
+    case "BootstrapMethods":
+      return readBootstrapMethodsAttribute(br, obj);
+    case "MethodParameters":
+      return readMethodParametersAttribute(br, obj);
+    default:
+      throw Error("Unknown AttributeNameIndex: " + name);
   }
   return obj;
 }
