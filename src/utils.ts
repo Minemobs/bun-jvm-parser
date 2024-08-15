@@ -1,4 +1,6 @@
+import type { CodeAttribute } from "./attributes";
 import type { ConstantClassInfo, ConstantPool, ConstantUtf8Info } from "./constantpool";
+import type { Instructions } from "./instructions";
 import type { ByteReader } from "./types";
 
 export function toVersion(majorVersion: number): number | string {
@@ -23,6 +25,37 @@ export function toStringAccessFlags(flags: number): string[] {
   return flagsArray;
 }
 
+export function fieldAccessFlagsToString(flags: number): string[] {
+  const flagsArray: string[] = [];
+  if((flags & 0x0001) !== 0) flagsArray.push("ACC_PUBLIC");
+  if((flags & 0x0002) !== 0) flagsArray.push("ACC_PRIVATE");
+  if((flags & 0x0004) !== 0) flagsArray.push("ACC_PROTECTED");
+  if((flags & 0x0008) !== 0) flagsArray.push("ACC_STATIC");
+  if((flags & 0x0010) !== 0) flagsArray.push("ACC_FINAL");
+  if((flags & 0x0040) !== 0) flagsArray.push("ACC_VOLATILE");
+  if((flags & 0x0080) !== 0) flagsArray.push("ACC_TRANSIENT");
+  if((flags & 0x1000) !== 0) flagsArray.push("ACC_SYNTHETIC");
+  if((flags & 0x4000) !== 0) flagsArray.push("ACC_ENUM");
+  return flagsArray;
+}
+
+export function methodAccessFlagsToString(flags: number): string[] {
+  const flagsArray: string[] = [];
+  if((flags & 0x0001) !== 0) flagsArray.push("ACC_PUBLIC");
+  if((flags & 0x0002) !== 0) flagsArray.push("ACC_PRIVATE");
+  if((flags & 0x0004) !== 0) flagsArray.push("ACC_PROTECTED");
+  if((flags & 0x0008) !== 0) flagsArray.push("ACC_STATIC");
+  if((flags & 0x0010) !== 0) flagsArray.push("ACC_FINAL");
+  if((flags & 0x0020) !== 0) flagsArray.push("ACC_SYNCHRONIZED");
+  if((flags & 0x0040) !== 0) flagsArray.push("ACC_BRIDGE");
+  if((flags & 0x0080) !== 0) flagsArray.push("ACC_VARARGS");
+  if((flags & 0x0100) !== 0) flagsArray.push("ACC_NATIVE");
+  if((flags & 0x0400) !== 0) flagsArray.push("ACC_ABSTRACT");
+  if((flags & 0x0400) !== 0) flagsArray.push("ACC_STRICT");
+  if((flags & 0x1000) !== 0) flagsArray.push("ACC_SYNTHETIC");
+  return flagsArray;
+}
+
 export function getClassName(thisClassIndex: number, constantPool: ConstantPool) {
   const clazz = constantPool[thisClassIndex - 1] as ConstantClassInfo;
   const str = constantPool[clazz.nameIndex - 1] as ConstantUtf8Info;
@@ -37,3 +70,4 @@ export function parseInterfaces(br: ByteReader, count: number, constantPool: Con
   }
   return array;
 }
+

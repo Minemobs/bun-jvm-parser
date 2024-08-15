@@ -1,6 +1,10 @@
+import { parseAttributes, type CodeAttribute } from "./attributes";
 import { parseConstantPool, type ConstantUtf8Info } from "./constantpool";
+import { parseFields } from "./fields";
+import { instructionsToString } from "./instructions";
+import { parseMethods } from "./methods";
 import { ByteReader } from "./types";
-import { toVersion, toStringAccessFlags, getClassName, parseInterfaces } from "./utils";
+import { toVersion, toStringAccessFlags, getClassName, parseInterfaces, fieldAccessFlagsToString, methodAccessFlagsToString, getInstructions } from "./utils";
 
 function readBytes(buffer: ArrayBuffer) {
   const dv = new DataView(buffer);
@@ -16,6 +20,11 @@ function readBytes(buffer: ArrayBuffer) {
   const interfacesCount = br.getUint16();
   const interfaces = parseInterfaces(br, interfacesCount, constantPool);
   const fieldsCount = br.getUint16();
+  const fields = parseFields(br, fieldsCount, constantPool);
+  const methodsCount = br.getUint16();
+  const methods = parseMethods(br, methodsCount, constantPool);
+  const attributesCount = br.getUint16();
+  const attributes = parseAttributes(br, attributesCount, constantPool);
 
   console.log(`
     Magic: ${magic}
@@ -27,9 +36,24 @@ function readBytes(buffer: ArrayBuffer) {
     superClass: ${getClassName(superClass, constantPool)}
     interfacesCount: ${interfacesCount}
     fieldsCount: ${fieldsCount}
+    methodsCount: ${methodsCount}
+    attributesCount: ${attributesCount}
     `.split("\n").map(it => it.trim()).filter(it => it.length !== 0).join("\n"))
+  console.log('-'.repeat(5) + "Constant pool" + '-'.repeat(5));
   console.table(constantPool);
+  console.log('-'.repeat(5) + "interfaces" + '-'.repeat(5));
   console.table(interfaces.map(it => constantPool[it.nameIndex - 1] as ConstantUtf8Info).map(it => Buffer.from(it.bytes).toString("utf8")));
+  console.log('-'.repeat(5) + "fields" + '-'.repeat(5));
+  console.table(fields.map(it => { return { accessFlags: fieldAccessFlagsToString(it.accessFlags), nameIndex: it.nameIndex, descriptorIndex: it.descriptorIndex, attributes: it.attributes } }));
+  console.log('-'.repeat(5) + "methods" + '-'.repeat(5));
+  console.table(methods.map(it => { return { accessFlags: methodAccessFlagsToString(it.accessFlags), nameIndex: it.nameIndex, descriptorIndex: it.descriptorIndex, attributes: it.attributes } }));
+  console.log('-'.repeat(5) + "attributes" + '-'.repeat(5));
+  console.table(attributes);
+
+  const instructions = methods.flatMap(it => it.attributes
+      .filter(it => Buffer.from((constantPool[it.attributeNameIndex - 1] as ConstantUtf8Info).bytes).toString("utf8") === "Code")
+    ).map(it => getInstructions(it as CodeAttribute)).map(it => instructionsToString(it));
+  console.table(instructions);
 }
 
 

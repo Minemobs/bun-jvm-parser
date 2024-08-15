@@ -4,7 +4,11 @@ import type { ConstantPool, ConstantUtf8Info } from "./constantpool";
 export type Attributes = Array<AttributeInfo & Record<string, unknown>>;
 
 export function parseAttributes(br: ByteReader, count: number, constantPool: ConstantPool): Attributes {
-  return [];
+  const attributes: Attributes = [];
+  for(let i = 0; i < count; i++) {
+    attributes.push(readAttribute(br, constantPool));
+  }
+  return attributes;
 }
 
 function readVerificationType(br: ByteReader): VerificationTypeInfo {
@@ -431,7 +435,7 @@ export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attri
     case "Exceptions":
       const excAttribute = obj as ExceptionsAttribute;
       excAttribute.numberOfExceptions = br.getUint16();
-      excAttribute.exceptionIndexTable = br.getUint8();
+      excAttribute.exceptionIndexTable = br.getUint16s(excAttribute.numberOfExceptions);
       break;
     case "InnerClasses":
       return readInnerClassAttribute(br, obj);
@@ -515,7 +519,7 @@ export type StackMapTableAttribute = AttributeInfo & {
 
 type ExceptionsAttribute = AttributeInfo & {
   numberOfExceptions: u2;
-  exceptionIndexTable: u1;
+  exceptionIndexTable: u2[];
 };
 
 type InnerClassesAttribute = AttributeInfo & {

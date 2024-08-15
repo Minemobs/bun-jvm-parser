@@ -2,7 +2,7 @@ import { parseAttributes, type Attributes } from "./attributes";
 import type { ConstantPool } from "./constantpool";
 import { ByteReader, type u2 } from "./types";
 
-function parseField(br: ByteReader, constantPool: ConstantPool): FieldInfo {
+function parseMethod(br: ByteReader, constantPool: ConstantPool): MethodInfo {
   const [accessFlags, nameIndex, descriptorIndex, attributesCount] = br.getUint16s(4);
   const attributes = parseAttributes(br, attributesCount, constantPool);
   return {
@@ -14,19 +14,20 @@ function parseField(br: ByteReader, constantPool: ConstantPool): FieldInfo {
   }
 }
 
-export function parseFields(br: ByteReader, count: number, constantPool: ConstantPool): FieldInfo[] {
-  const fields: FieldInfo[] = [];
+export function parseMethods(br: ByteReader, count: number, constantPool: ConstantPool): MethodInfo[] {
+  const fields: MethodInfo[] = [];
   for (let i = 0; i < count; i++) {
-    fields.push(parseField(br, constantPool));
+    fields.push(parseMethod(br, constantPool));
   }
   return fields;
 }
 
-export type FieldInfo = {
+export type MethodInfo = {
   accessFlags: u2;
   nameIndex: u2;
   descriptorIndex: u2;
   attributesCount: u2;
   attributes: Attributes;
 };
+
 
