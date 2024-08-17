@@ -1,5 +1,5 @@
 {
-  "name": "java2ts",
+  "name": "bun-jvm-parser",
   "module": "index.ts",
   "type": "module",
   "devDependencies": {

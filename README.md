@@ -1,4 +1,4 @@
-# java2ts
+# bun-jvm-parser
 
 To install dependencies:
 

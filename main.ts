@@ -1,10 +1,10 @@
-import { parseAttributes, type CodeAttribute } from "./attributes";
-import { parseConstantPool, type ConstantUtf8Info } from "./constantpool";
-import { parseFields } from "./fields";
-import { instructionsToString } from "./instructions";
-import { parseMethods } from "./methods";
-import { ByteReader } from "./types";
-import { toVersion, toStringAccessFlags, getClassName, parseInterfaces, fieldAccessFlagsToString, methodAccessFlagsToString, getInstructions } from "./utils";
+import { parseAttributes, type CodeAttribute } from "./src/attributes";
+import { parseConstantPool, type ConstantUtf8Info } from "./src/constantpool";
+import { parseFields } from "./src/fields";
+import { getInstructions } from "./src/instructions";
+import { parseMethods } from "./src/methods";
+import { ByteReader } from "./src/types";
+import { toVersion, toStringAccessFlags, getClassName, parseInterfaces, fieldAccessFlagsToString, methodAccessFlagsToString } from "./src/utils";
 
 function readBytes(buffer: ArrayBuffer) {
   const dv = new DataView(buffer);
@@ -52,8 +52,8 @@ function readBytes(buffer: ArrayBuffer) {
 
   const instructions = methods.flatMap(it => it.attributes
       .filter(it => Buffer.from((constantPool[it.attributeNameIndex - 1] as ConstantUtf8Info).bytes).toString("utf8") === "Code")
-    ).map(it => getInstructions(it as CodeAttribute)).map(it => instructionsToString(it));
-  console.table(instructions);
+    ).map(it => getInstructions(it as CodeAttribute));
+  console.log(instructions);
 }
 
 

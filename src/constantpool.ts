@@ -48,8 +48,6 @@ function readConstantPool(br: ByteReader, tag: ConstantPoolTypes): ConstantPool[
   }
 }
 
-
-
 export const enum ConstantPoolTypes {
   class = 7,
   fieldref = 9,

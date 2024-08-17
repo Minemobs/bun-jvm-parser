@@ -1,6 +1,4 @@
-import type { CodeAttribute } from "./attributes";
 import type { ConstantClassInfo, ConstantPool, ConstantUtf8Info } from "./constantpool";
-import type { Instructions } from "./instructions";
 import type { ByteReader } from "./types";
 
 export function toVersion(majorVersion: number): number | string {
