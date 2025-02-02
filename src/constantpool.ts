@@ -1,4 +1,4 @@
-import type { ByteReader, u1, u2, u4 } from "./types.js";
+import type { ByteReader, u1, u2, u4 } from "./index";
 
 export type ConstantPool = Array<CPInfo<number> & Record<string, number | number[]>>;
 

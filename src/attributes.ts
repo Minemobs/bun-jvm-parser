@@ -1,5 +1,4 @@
-import type { Between, ByteReader, ArrayWithLength, u1, u2, u4 } from "./types.js";
-import type { ConstantPool, ConstantUtf8Info } from "./constantpool.js";
+import type { Between, ByteReader, ArrayWithLength, u1, u2, u4, ConstantPool, ConstantUtf8Info } from "./index";
 
 export type Attributes = Array<AttributeInfo & Record<string, unknown>>;
 

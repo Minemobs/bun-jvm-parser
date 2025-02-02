@@ -1,5 +1,4 @@
-import type { CodeAttribute } from "./attributes.js";
-import type { u1, u2, u4 } from "./types.js";
+import type { CodeAttribute, u1, u2, u4 } from "./index";
 
 export type Instruction<T extends keyof _instructions> = _instructions[T];
 
@@ -248,9 +247,9 @@ function getInstruction(code: number[], index: number): [number, BaseInstruction
     case "instanceof":
       return [ index + 2, { name, indexbyte: readInt16(code, index + 1) } as GetStaticInstruction];
     case "invokeinterface":
-      return [ index + 4, { name, indexbyte: readInt16(code, index + 1), count: code[index + 3], "_": 0} as InvokeInterfaceInstruction];
+      return [ index + 4, { name, indexbyte: readInt16(code, index + 1), count: code[index + 3]} as InvokeInterfaceInstruction];
     case "invokedynamic":
-      return [ index + 4, { name, indexbyte: readInt16(code, index + 1), "_": 0} as InvokeInterfaceInstruction];
+      return [ index + 4, { name, indexbyte: readInt16(code, index + 1)} as InvokeInterfaceInstruction];
     case "newarray":
       return [ index + 1, { name, atype: code[index + 1] } as NewArrayInstruction];
     case "wide":
@@ -350,8 +349,8 @@ type PutFieldInstruction = { indexbyte: u2 } & BaseInstruction;
 type InvokeVirtualInstruction = { indexbyte: u2 } & BaseInstruction;
 type InvokeSpecialInstruction = { indexbyte: u2 } & BaseInstruction;
 type InvokeStaticInstruction = { indexbyte: u2 } & BaseInstruction;
-type InvokeInterfaceInstruction = { indexbyte: u2, count: u1, _: u2 } & BaseInstruction;
-type InvokeDynamicInstruction = { indexbyte: u2, _: u2 } & BaseInstruction;
+type InvokeInterfaceInstruction = { indexbyte: u2, count: u1 } & BaseInstruction;
+type InvokeDynamicInstruction = { indexbyte: u2 } & BaseInstruction;
 type NewInstruction = { indexbyte: u2 } & BaseInstruction;
 type NewArrayInstruction = { atype: u1 } & BaseInstruction;
 type ANewArrayInstruction = { indexbyte: u2 } & BaseInstruction;
