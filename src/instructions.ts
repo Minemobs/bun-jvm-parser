@@ -1,5 +1,5 @@
-import type { CodeAttribute } from "./attributes";
-import type { u1, u2, u4 } from "./types";
+import type { CodeAttribute } from "./attributes.js";
+import type { u1, u2, u4 } from "./types.js";
 
 export type Instruction<T extends keyof _instructions> = _instructions[T];
 

@@ -1,5 +1,5 @@
-import type { ConstantClassInfo, ConstantPool, ConstantUtf8Info } from "./constantpool";
-import type { ByteReader } from "./types";
+import type { ConstantClassInfo, ConstantPool, ConstantUtf8Info } from "./constantpool.js";
+import type { ByteReader } from "./types.js";
 
 export function toVersion(majorVersion: number): number | string {
   if (majorVersion < 45) return NaN;

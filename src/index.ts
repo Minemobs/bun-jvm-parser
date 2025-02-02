@@ -1,7 +1,7 @@
-export * from "./instructions";
-export * from "./attributes";
-export * from "./constantpool";
-export * from "./utils";
-export { parseMethods } from "./methods";
-export { parseFields } from "./fields";
-export { ByteReader } from "./types";
+export * from "./instructions.js";
+export * from "./attributes.js";
+export * from "./constantpool.js";
+export * from "./utils.js";
+export { parseMethods } from "./methods.js";
+export { parseFields } from "./fields.js";
+export { ByteReader } from "./types.js";

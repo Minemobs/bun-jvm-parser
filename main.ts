@@ -1,12 +1,30 @@
-import { parseAttributes, type CodeAttribute } from "./src/attributes";
-import { parseConstantPool, type ConstantUtf8Info } from "./src/constantpool";
-import { parseFields } from "./src/fields";
-import { getInstructions } from "./src/instructions";
-import { parseMethods } from "./src/methods";
-import { ByteReader } from "./src/types";
-import { toVersion, toStringAccessFlags, getClassName, parseInterfaces, fieldAccessFlagsToString, methodAccessFlagsToString } from "./src/utils";
+import { readFileSync } from "node:fs";
+import { parseAttributes, type CodeAttribute } from "./src/attributes.js";
+import { parseConstantPool, type ConstantUtf8Info } from "./src/constantpool.js";
+import { parseFields } from "./src/fields.js";
+import { getInstructions } from "./src/instructions.js";
+import { parseMethods } from "./src/methods.js";
+import { ByteReader } from "./src/types.js";
+import { toVersion, toStringAccessFlags, getClassName, parseInterfaces, fieldAccessFlagsToString, methodAccessFlagsToString } from "./src/utils.js";
+import { argv } from "node:process";
 
-function readBytes(buffer: ArrayBuffer) {
+function readBytes(buffer: ArrayBufferLike) {
+  const poolStringTable = {
+    7: "class",
+    9: "fieldref",
+    10: "methodref",
+    11: "interfaceMethodref",
+    8: "string",
+    3: "integer",
+    4: "float",
+    5: "long",
+    6: "double",
+    12: "nameAndType",
+    1: "utf8",
+    15: "methodHandle",
+    16: "methodType",
+    18: "invokeDynamic",
+  } as const;
   const dv = new DataView(buffer);
   const br = new ByteReader(dv);
   const magic = br.getUint32();
@@ -36,8 +54,6 @@ function readBytes(buffer: ArrayBuffer) {
     superClass: ${getClassName(superClass, constantPool)}
     interfacesCount: ${interfacesCount}
     fieldsCount: ${fieldsCount}
-    methodsCount: ${methodsCount}
-    attributesCount: ${attributesCount}
     `.split("\n").map(it => it.trim()).filter(it => it.length !== 0).join("\n"))
   console.log('-'.repeat(5) + "Constant pool" + '-'.repeat(5));
   console.table(constantPool);
@@ -57,5 +73,6 @@ function readBytes(buffer: ArrayBuffer) {
 }
 
 
-const file = await Bun.file(Bun.argv[2]).arrayBuffer();
+//const file = await Bun.file(Bun.argv[2]).arrayBuffer();
+const file = new Uint8Array(readFileSync(argv[2])).buffer;
 readBytes(file);

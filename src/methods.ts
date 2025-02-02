@@ -1,6 +1,6 @@
-import { parseAttributes, type Attributes } from "./attributes";
-import type { ConstantPool } from "./constantpool";
-import { ByteReader, type u2 } from "./types";
+import { parseAttributes, type Attributes } from "./attributes.js";
+import type { ConstantPool } from "./constantpool.js";
+import { ByteReader, type u2 } from "./types.js";
 
 function parseMethod(br: ByteReader, constantPool: ConstantPool): MethodInfo {
   const [accessFlags, nameIndex, descriptorIndex, attributesCount] = br.getUint16s(4);

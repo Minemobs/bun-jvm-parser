@@ -1,5 +1,5 @@
-import type { Between, ByteReader, ArrayWithLength, u1, u2, u4 } from "./types";
-import type { ConstantPool, ConstantUtf8Info } from "./constantpool";
+import type { Between, ByteReader, ArrayWithLength, u1, u2, u4 } from "./types.js";
+import type { ConstantPool, ConstantUtf8Info } from "./constantpool.js";
 
 export type Attributes = Array<AttributeInfo & Record<string, unknown>>;
 
@@ -13,10 +13,10 @@ export function parseAttributes(br: ByteReader, count: number, constantPool: Con
 
 function readVerificationType(br: ByteReader): VerificationTypeInfo {
   const tag = br.getUint8();
+  if(tag !== 7 && tag !== 8) return { tag: tag as 0 };
   const data = br.getUint16();
   if(tag === 7) return { tag, cpoolIndex: data };
-  if(tag === 8) return { tag, offset: data };
-  return { tag: tag as 0 };
+  return { tag, offset: data };
 }
 
 function readStackMapFrame(br: ByteReader): StackMapFrame {
@@ -487,7 +487,7 @@ export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attri
     case "MethodParameters":
       return readMethodParametersAttribute(br, obj);
     default:
-      throw Error("Unknown AttributeNameIndex: " + name);
+      throw Error("Unknown AttributeNameIndex: " + name + " at index " + br.offset);
   }
   return obj;
 }

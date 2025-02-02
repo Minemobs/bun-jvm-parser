@@ -1,4 +1,4 @@
-import type { ByteReader, u1, u2, u4 } from "./types";
+import type { ByteReader, u1, u2, u4 } from "./types.js";
 
 export type ConstantPool = Array<CPInfo<number> & Record<string, number | number[]>>;
 
@@ -6,8 +6,11 @@ export function parseConstantPool(br: ByteReader, count: number): ConstantPool {
   const array: ConstantPool = [];
   for (let i = 0; i < count - 1; i++) {
     const tag = br.getUint8();
-    if (tag === ConstantPoolTypes.long || tag === ConstantPoolTypes.double) i++;
     array.push(readConstantPool(br, tag));
+    if (tag === ConstantPoolTypes.long || tag === ConstantPoolTypes.double) {
+      i++;
+      array.push({ tag: 0 });
+    }
   }
   return array;
 }
@@ -63,6 +66,9 @@ export const enum ConstantPoolTypes {
   methodHandle = 15,
   methodType = 16,
   invokeDynamic = 18,
+  dynamic = 17,
+  module = 19,
+  package = 20,
 }
 
 export type CPInfo<T extends u1> = {
@@ -77,6 +83,14 @@ export type ConstantInfoMethodRef = CPInfo<ConstantPoolTypes.methodref> & {
 export type ConstantClassInfo = CPInfo<ConstantPoolTypes.class> & {
   nameIndex: u2;
 };
+
+export type ConstantModuleInfo = CPInfo<ConstantPoolTypes.module> & {
+  nameIndex: u2;
+}
+
+export type ConstantPackageInfo = CPInfo<ConstantPoolTypes.package> & {
+  nameIndex: u2;
+}
 
 export type FieldRefInfo = CPInfo<ConstantPoolTypes.fieldref> & {
   classIndex: u2;
@@ -134,3 +148,4 @@ export type ConstantInvokeDynamicInfo = CPInfo<ConstantPoolTypes.invokeDynamic> 
   nameAndTypeIndex: u2;
 };
 
+export type ConstantDynamicInfo = CPInfo<ConstantPoolTypes.dynamic> & Omit<ConstantInvokeDynamicInfo, "tag">;
