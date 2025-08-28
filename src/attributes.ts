@@ -421,7 +421,7 @@ function readRecordAttribute(br: ByteReader, constantPool: ConstantPool, { attri
     const descriptorIndex = br.getUint16();
     const attributesCount = br.getUint16();
     const attributes: Attributes = [];
-    for(let j = 0; j < componentsCount; j++) {
+    for(let j = 0; j < componentsCount - 1; j++) {
       attributes.push(readAttribute(br, constantPool));
     }
     components.push({
@@ -513,6 +513,10 @@ export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attri
       return readMethodParametersAttribute(br, obj);
     case "Record":
       return readRecordAttribute(br, constantPool, obj);
+    case "NestHost":
+      const nhAttr = obj as NestHostAttribute;
+      nhAttr.hostClassIndex = br.getUint16();
+      break;
     case "NestMembers":
       const nmAttr = obj as NestMembersAttribute;
       nmAttr.numberOfClasses = br.getUint16();
@@ -632,6 +636,10 @@ type MethodParameters = AttributeInfo & {
   parametersCount: u1;
   parameters: Parameters[];
 };
+
+type NestHostAttribute = AttributeInfo & {
+  hostClassIndex: u2;
+}
 
 type NestMembersAttribute = AttributeInfo & {
   numberOfClasses: u2;

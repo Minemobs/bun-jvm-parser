@@ -176,7 +176,5 @@ dist
 *.class
 *.java
 com/
-test.ts
-oldindex.ts
 .vscode
-instructions.json
+tmp/
