@@ -413,6 +413,32 @@ function readMethodParametersAttribute(br: ByteReader, { attributeNameIndex, att
   };
 }
 
+function readRecordAttribute(br: ByteReader, constantPool: ConstantPool, { attributeNameIndex, attributeLength }: Attributes[number]): RecordAttribute {
+  const componentsCount = br.getUint16();
+  const components: RecordComponentInfo[] = [];
+  for(let i = 0; i < componentsCount; i++) {
+    const nameIndex = br.getUint16();
+    const descriptorIndex = br.getUint16();
+    const attributesCount = br.getUint16();
+    const attributes: Attributes = [];
+    for(let j = 0; j < componentsCount; j++) {
+      attributes.push(readAttribute(br, constantPool));
+    }
+    components.push({
+      nameIndex,
+      descriptorIndex,
+      attributesCount,
+      attributes
+    });
+  }
+  return {
+    attributeNameIndex,
+    attributeLength,
+    componentsCount,
+    components
+  }
+}
+
 
 export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attributes[number] {
   const nameIndex = br.getUint16();
@@ -485,6 +511,13 @@ export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attri
       return readBootstrapMethodsAttribute(br, obj);
     case "MethodParameters":
       return readMethodParametersAttribute(br, obj);
+    case "Record":
+      return readRecordAttribute(br, constantPool, obj);
+    case "NestMembers":
+      const nmAttr = obj as NestMembersAttribute;
+      nmAttr.numberOfClasses = br.getUint16();
+      nmAttr.classes = br.getUint16s(nmAttr.numberOfClasses);
+      break;
     default:
       throw Error("Unknown AttributeNameIndex: " + name + " at index " + br.offset);
   }
@@ -599,6 +632,23 @@ type MethodParameters = AttributeInfo & {
   parametersCount: u1;
   parameters: Parameters[];
 };
+
+type NestMembersAttribute = AttributeInfo & {
+  numberOfClasses: u2;
+  classes: u2[];
+}
+
+type RecordAttribute = AttributeInfo & {
+  componentsCount: u2;
+  components: RecordComponentInfo[];
+};
+
+type RecordComponentInfo = {
+  nameIndex: u2;
+  descriptorIndex: u2;
+  attributesCount: u2;
+  attributes: AttributeInfo[];
+}
 
 // Other
 type Parameters = {
