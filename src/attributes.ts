@@ -518,6 +518,7 @@ export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attri
       nhAttr.hostClassIndex = br.getUint16();
       break;
     case "NestMembers":
+    case "PermittedSubclasses":
       const nmAttr = obj as NestMembersAttribute;
       nmAttr.numberOfClasses = br.getUint16();
       nmAttr.classes = br.getUint16s(nmAttr.numberOfClasses);
@@ -645,6 +646,8 @@ type NestMembersAttribute = AttributeInfo & {
   numberOfClasses: u2;
   classes: u2[];
 }
+
+type PermittedSubclassesAttribute = NestMembersAttribute;
 
 type RecordAttribute = AttributeInfo & {
   componentsCount: u2;
