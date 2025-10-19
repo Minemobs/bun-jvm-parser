@@ -4,7 +4,7 @@ export type Attributes = Array<AttributeInfo & Record<string, unknown>>;
 
 export function parseAttributes(br: ByteReader, count: number, constantPool: ConstantPool): Attributes {
   const attributes: Attributes = [];
-  for(let i = 0; i < count; i++) {
+  for (let i = 0; i < count; i++) {
     attributes.push(readAttribute(br, constantPool));
   }
   return attributes;
@@ -12,34 +12,34 @@ export function parseAttributes(br: ByteReader, count: number, constantPool: Con
 
 function readVerificationType(br: ByteReader): VerificationTypeInfo {
   const tag = br.getUint8();
-  if(tag !== 7 && tag !== 8) return { tag: tag as 0 };
+  if (tag !== 7 && tag !== 8) return { tag: tag as 0 };
   const data = br.getUint16();
-  if(tag === 7) return { tag, cpoolIndex: data };
+  if (tag === 7) return { tag, cpoolIndex: data };
   return { tag, offset: data };
 }
 
 function readStackMapFrame(br: ByteReader): StackMapFrame {
   const frameType = br.getUint8();
-  if(frameType >= 0 && frameType <= 63) return { frameType };
-  if(frameType >= 64 && frameType <= 127) return { frameType, stack: [readVerificationType(br)] };
-  if(frameType === 247) return { frameType, offsetDelta: br.getUint16(), stack: [readVerificationType(br)] };
-  if(frameType >= 248 && frameType <= 250) return { frameType, offsetDelta: br.getUint16() };
-  if(frameType === 251) return { frameType, offsetDelta: br.getUint16() };
-  if(frameType >= 252 && frameType <= 254) {
+  if (frameType >= 0 && frameType <= 63) return { frameType };
+  if (frameType >= 64 && frameType <= 127) return { frameType, stack: [readVerificationType(br)] };
+  if (frameType === 247) return { frameType, offsetDelta: br.getUint16(), stack: [readVerificationType(br)] };
+  if (frameType >= 248 && frameType <= 250) return { frameType, offsetDelta: br.getUint16() };
+  if (frameType === 251) return { frameType, offsetDelta: br.getUint16() };
+  if (frameType >= 252 && frameType <= 254) {
     const offsetDelta = br.getUint16();
     const locals = [];
     const length = frameType - 251;
-    for(let i = 0; i < length; i++) locals.push(readVerificationType(br));
+    for (let i = 0; i < length; i++) locals.push(readVerificationType(br));
     return { frameType, offsetDelta, locals };
   }
-  if(frameType === 255) {
+  if (frameType === 255) {
     const offsetDelta = br.getUint16();
     const numberOfLocals = br.getUint16();
     const locals: VerificationTypeInfo[] = [];
-    for(let i = 0; i < numberOfLocals; i++) locals.push(readVerificationType(br));
+    for (let i = 0; i < numberOfLocals; i++) locals.push(readVerificationType(br));
     const numberOfStackItems = br.getUint16();
     const stack: VerificationTypeInfo[] = [];
-    for(let i = 0; i < numberOfStackItems; i++) stack.push(readVerificationType(br));
+    for (let i = 0; i < numberOfStackItems; i++) stack.push(readVerificationType(br));
     return { frameType, offsetDelta, numberOfLocals, locals, numberOfStackItems, stack };
   }
   throw Error("Unknown frame type");
@@ -61,10 +61,10 @@ function readCodeAttribute(br: ByteReader, constantPool: ConstantPool, { attribu
   const code = br.getUint8s(codeLength);
   const exceptionTableLength = br.getUint16();
   const exceptionTable: ExceptionTable[] = [];
-  for(let i = 0; i < exceptionTableLength; i++) exceptionTable.push(readExceptionTable(br, exceptionTableLength));
+  for (let i = 0; i < exceptionTableLength; i++) exceptionTable.push(readExceptionTable(br, exceptionTableLength));
   const attributesCount = br.getUint16();
   const attributes: Attributes = [];
-  for(let i = 0; i < attributesCount; i++) attributes.push(readAttribute(br, constantPool));
+  for (let i = 0; i < attributesCount; i++) attributes.push(readAttribute(br, constantPool));
   return {
     attributeNameIndex,
     attributeLength,
@@ -82,7 +82,7 @@ function readCodeAttribute(br: ByteReader, constantPool: ConstantPool, { attribu
 function readInnerClassAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): InnerClassesAttribute {
   const numberOfClasses = br.getUint8();
   const classes: Classes[] = [];
-  for(let i = 0; i < numberOfClasses; i++) {
+  for (let i = 0; i < numberOfClasses; i++) {
     classes.push({
       innerClassInfoIndex: br.getUint16(),
       outerClassInfoIndex: br.getUint16(),
@@ -101,7 +101,7 @@ function readInnerClassAttribute(br: ByteReader, { attributeNameIndex, attribute
 function readLineNumberTableAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): LineNumberTableAttribute {
   const lineNumberTableLength = br.getUint16();
   const lineNumberTable: LineNumberTableAttribute["lineNumberTable"] = [];
-  for(let i = 0; i < lineNumberTableLength; i++) {
+  for (let i = 0; i < lineNumberTableLength; i++) {
     lineNumberTable.push({
       startPC: br.getUint16(),
       lineNumber: br.getUint16()
@@ -118,7 +118,7 @@ function readLineNumberTableAttribute(br: ByteReader, { attributeNameIndex, attr
 function readLocalVariableTableAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): LocalVariableTableAttribute {
   const localVariableTableLength = br.getUint16();
   const localVariableTable: LocalVariableTable[] = [];
-  for(let i = 0; i < localVariableTableLength; i++) {
+  for (let i = 0; i < localVariableTableLength; i++) {
     localVariableTable.push({
       startPC: br.getUint16(),
       length: br.getUint16(),
@@ -138,7 +138,7 @@ function readLocalVariableTableAttribute(br: ByteReader, { attributeNameIndex, a
 function readLocalVariableTypeTableAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): LocalVariableTypeTableAttribute {
   const localVariableTypeTableLength = br.getUint16();
   const localVariableTypeTable: LocalVariableTypeTable[] = [];
-  for(let i = 0; i < localVariableTypeTableLength; i++) {
+  for (let i = 0; i < localVariableTypeTableLength; i++) {
     localVariableTypeTable.push({
       startPC: br.getUint16(),
       length: br.getUint16(),
@@ -167,7 +167,7 @@ function readRuntimeVisibleAnnotationsAttribute(br: ByteReader, { attributeNameI
 
 function readAnnotations(br: ByteReader, numAnnotations: u2): Annotation[] {
   const annotations: Annotation[] = [];
-  for(let i = 0; i < numAnnotations; i++) {
+  for (let i = 0; i < numAnnotations; i++) {
     annotations.push(readAnnotation(br));
   }
   return annotations;
@@ -175,7 +175,7 @@ function readAnnotations(br: ByteReader, numAnnotations: u2): Annotation[] {
 
 function readElementValuePairs(br: ByteReader, length: u2): ElementValuePairs[] {
   const elementValuePairs: ElementValuePairs[] = [];
-  for(let i = 0; i < length; i++) {
+  for (let i = 0; i < length; i++) {
     const elementNameIndex = br.getUint16();
     const value = readElementValue(br);
     elementValuePairs.push({
@@ -208,7 +208,7 @@ function readElementValue(br: ByteReader): ElementValue {
 }
 
 function readElementValueUnion(br: ByteReader, tag: ElementValueTags) {
-  switch(tag) {
+  switch (tag) {
     // Doing a fallthrough because all primitives types (String included) only use a u2
     case ElementValueTags.BYTE:
     case ElementValueTags.CHAR:
@@ -232,10 +232,10 @@ function readElementValueUnion(br: ByteReader, tag: ElementValueTags) {
     case ElementValueTags.ARRAY:
       const numValues = br.getUint16();
       const elementValues: ElementValue[] = [];
-      for(let i = 0; i < numValues; i++) {
+      for (let i = 0; i < numValues; i++) {
         elementValues.push(readElementValue(br));
       }
-      
+
       return {
         numValues,
         values: elementValues
@@ -246,7 +246,7 @@ function readElementValueUnion(br: ByteReader, tag: ElementValueTags) {
 function readRuntimeVisibleParameterAnnotationsAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): RuntimeVisibleParameterAnnotationsAttribute {
   const numParameters = br.getUint16();
   const parameterAnnotations: { numAnnotations: u2, annotations: Annotation[] }[] = [];
-  for(let i = 0; i < numParameters; i++) {
+  for (let i = 0; i < numParameters; i++) {
     const numAnnotations = br.getUint16();
     parameterAnnotations.push({
       numAnnotations,
@@ -263,7 +263,7 @@ function readRuntimeVisibleParameterAnnotationsAttribute(br: ByteReader, { attri
 
 function readTables(br: ByteReader, length: u2): Table[] {
   const tables: Table[] = [];
-  for(let i = 0; i < length; i++) {
+  for (let i = 0; i < length; i++) {
     tables.push({
       startPC: br.getUint16(),
       length: br.getUint16(),
@@ -276,7 +276,7 @@ function readTables(br: ByteReader, length: u2): Table[] {
 function readTypeAnnotation(br: ByteReader): TypeAnnotation {
   const targetType = br.getUint8();
   let targetInfo: TargetInfo = {};
-  switch(targetType) {
+  switch (targetType) {
     case 0x00:
     case 0x01:
       targetInfo = { typeParameterIndex: br.getUint8() } as TypeParameterTarget;
@@ -327,7 +327,7 @@ function readTypeAnnotation(br: ByteReader): TypeAnnotation {
   }
   const pathLength = br.getUint8();
   const paths: Path[] = [];
-  for(let i = 0; i < pathLength; i++) {
+  for (let i = 0; i < pathLength; i++) {
     paths.push({
       typePathKind: br.getUint8(),
       typeArgumentIndex: br.getUint8()
@@ -353,7 +353,7 @@ function readTypeAnnotation(br: ByteReader): TypeAnnotation {
 function readRuntimeVisibleTypeAnnotationsAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): RuntimeVisibleTypeAnnotationsAttribute {
   const numAnnotations = br.getUint16();
   const annotations: TypeAnnotation[] = [];
-  for(let i = 0; i < numAnnotations; i++) {
+  for (let i = 0; i < numAnnotations; i++) {
     annotations.push(readTypeAnnotation(br));
   }
   return {
@@ -374,9 +374,9 @@ function readAnnotationDefaultAttribute(br: ByteReader, { attributeNameIndex, at
 
 
 function readBootstrapMethodsAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): BootstrapMethodsAttribute {
-  const numBootstrapMethods = br.getUint16();  
+  const numBootstrapMethods = br.getUint16();
   const bootstrapMethods: BootstrapMethods[] = [];
-  for(let i = 0; i < numBootstrapMethods; i++) {
+  for (let i = 0; i < numBootstrapMethods; i++) {
     const bootstrapMethodRef = br.getUint16();
     const numBootstrapArguments = br.getUint16();
     const bootstrapArguments = br.getUint16s(numBootstrapArguments);
@@ -397,7 +397,7 @@ function readBootstrapMethodsAttribute(br: ByteReader, { attributeNameIndex, att
 function readMethodParametersAttribute(br: ByteReader, { attributeNameIndex, attributeLength }: Attributes[number]): MethodParameters {
   const parametersCount = br.getUint8();
   const parameters: Parameters[] = [];
-  for(let i = 0; i < parametersCount; i++) {
+  for (let i = 0; i < parametersCount; i++) {
     const nameIndex = br.getUint16();
     const accessFlags = br.getUint16();
     parameters.push({
@@ -416,12 +416,12 @@ function readMethodParametersAttribute(br: ByteReader, { attributeNameIndex, att
 function readRecordAttribute(br: ByteReader, constantPool: ConstantPool, { attributeNameIndex, attributeLength }: Attributes[number]): RecordAttribute {
   const componentsCount = br.getUint16();
   const components: RecordComponentInfo[] = [];
-  for(let i = 0; i < componentsCount; i++) {
+  for (let i = 0; i < componentsCount; i++) {
     const nameIndex = br.getUint16();
     const descriptorIndex = br.getUint16();
     const attributesCount = br.getUint16();
     const attributes: Attributes = [];
-    for(let j = 0; j < componentsCount - 1; j++) {
+    for (let j = 0; j < componentsCount - 1; j++) {
       attributes.push(readAttribute(br, constantPool));
     }
     components.push({
@@ -439,13 +439,85 @@ function readRecordAttribute(br: ByteReader, constantPool: ConstantPool, { attri
   }
 }
 
+function readModuleAttribute(br: ByteReader, constantPool: ConstantPool, { attributeNameIndex, attributeLength }: Attributes[number]): ModuleAttribute {
+  const [moduleNameIndex, moduleFlags, moduleVersionIndex] = br.getUint16s(3);
+  const requiresCount = br.getUint16();
+  const requires: ModuleRequiresInfo[] = [];
+  for(let i = 0; i < requiresCount; i++) {
+    const [requiresIndex, requiresFlags, requiresVersionIndex] = br.getUint16s(3);
+    requires.push({
+      requiresIndex,
+      requiresFlags,
+      requiresVersionIndex
+    });
+  }
+
+  const exportsCount = br.getUint16();
+  const exports: ModuleExportsInfo[] = [];
+  for(let i = 0; i < exportsCount; i++) {
+    const [exportsIndex, exportsFlags, exportsToCount] = br.getUint16s(3);
+    const exportsToIndex = br.getUint16s(exportsToCount);
+    exports.push({
+      exportsIndex,
+      exportsFlags,
+      exportsToCount,
+      exportsToIndex
+    });
+  }
+
+  const opensCount = br.getUint16();
+  const opens: ModuleOpensInfo[] = [];
+  for(let i = 0; i < opensCount; i++) {
+    const [opensIndex, opensFlags, opensToCount] = br.getUint16s(3);
+    const opensToIndex = br.getUint16s(opensToCount);
+    opens.push({
+      opensIndex,
+      opensFlags,
+      opensToCount,
+      opensToIndex
+    });
+  }
+
+  const usesCount = br.getUint16();
+  const usesIndex = br.getUint16s(usesCount);
+
+  const providesCount = br.getUint16();
+  const provides: ModuleProvidesInfo[] = [];
+  for(let i = 0; i < providesCount; i++) {
+    const [providesIndex, providesWithCount] = br.getUint16s(3);
+    const providesWithIndex = br.getUint16s(providesWithCount);
+    provides.push({
+      providesIndex,
+      providesWithCount,
+      providesWithIndex
+    });
+  }
+
+  return {
+    attributeNameIndex,
+    attributeLength,
+    moduleNameIndex,
+    moduleFlags,
+    moduleVersionIndex,
+    requiresCount,
+    requires,
+    exportsCount,
+    exports,
+    opensCount,
+    opens,
+    usesCount,
+    usesIndex,
+    providesCount,
+    provides
+  }
+}
 
 export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attributes[number] {
   const nameIndex = br.getUint16();
   const length = br.getUint32();
   const obj: Attributes[number] = { attributeNameIndex: nameIndex, attributeLength: length };
   const name = Buffer.from((constantPool[nameIndex - 1] as ConstantUtf8Info).bytes).toString("utf8");
-  switch(name) {
+  switch (name) {
     case "ConstantValue":
       (obj as ConstantValueAttribute).constantValueIndex = br.getUint16();
       break;
@@ -455,7 +527,7 @@ export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attri
       const smtAttribute = obj as StackMapTableAttribute;
       smtAttribute.numberOfEntries = br.getUint16();
       smtAttribute.entries = [];
-      for(let i = 0; i < smtAttribute.numberOfEntries; i++) smtAttribute.entries.push(readStackMapFrame(br));
+      for (let i = 0; i < smtAttribute.numberOfEntries; i++) smtAttribute.entries.push(readStackMapFrame(br));
       break;
     case "Exceptions":
       const excAttribute = obj as ExceptionsAttribute;
@@ -523,6 +595,15 @@ export function readAttribute(br: ByteReader, constantPool: ConstantPool): Attri
       nmAttr.numberOfClasses = br.getUint16();
       nmAttr.classes = br.getUint16s(nmAttr.numberOfClasses);
       break;
+    case "Module":
+      return readModuleAttribute(br, constantPool, obj);
+    case "ModulePackages":
+      const mpAttr = obj as ModulePackagesAttribute;
+      mpAttr.packageCount = br.getUint16();
+      mpAttr.packageIndex = br.getUint16s(mpAttr.packageCount);
+      break;
+    case "ModuleMainClass":
+      return { attributeNameIndex: nameIndex, attributeLength: length, mainClassIndex: br.getUint16() } as ModuleMainClassAttribute;
     default:
       throw Error("Unknown AttributeNameIndex: " + name + " at index " + br.offset);
   }
@@ -654,6 +735,64 @@ type RecordAttribute = AttributeInfo & {
   components: RecordComponentInfo[];
 };
 
+type ModuleAttribute = AttributeInfo & {
+  moduleNameIndex: u2;
+  moduleFlags: u2;
+  moduleVersionIndex: u2;
+
+  requiresCount: u2;
+  requires: ModuleRequiresInfo[];
+
+  exportsCount: u2;
+  exports: ModuleExportsInfo[];
+
+  opensCount: u2;
+  opens: ModuleOpensInfo[];
+
+  usesCount: u2;
+  usesIndex: u2[];
+
+  providesCount: u2;
+  provides: ModuleProvidesInfo[];
+}
+
+type ModulePackagesAttribute = AttributeInfo & {
+  packageCount: u2;
+  packageIndex: u2[];
+}
+
+type ModuleMainClassAttribute = AttributeInfo & {
+  mainClassIndex: u2;
+}
+
+// Other
+
+type ModuleProvidesInfo = {
+  providesIndex: u2;
+  providesWithCount: u2;
+  providesWithIndex: u2[];
+}
+
+type ModuleOpensInfo = {
+  opensIndex: u2;
+  opensFlags: u2;
+  opensToCount: u2;
+  opensToIndex: u2[];
+}
+
+type ModuleRequiresInfo = {
+  requiresIndex: u2;
+  requiresFlags: u2;
+  requiresVersionIndex: u2;
+}
+
+type ModuleExportsInfo = {
+  exportsIndex: u2;
+  exportsFlags: u2;
+  exportsToCount: u2;
+  exportsToIndex: u2[];
+}
+
 type RecordComponentInfo = {
   nameIndex: u2;
   descriptorIndex: u2;
@@ -661,7 +800,6 @@ type RecordComponentInfo = {
   attributes: AttributeInfo[];
 }
 
-// Other
 type Parameters = {
   nameIndex: u2;
   accessFlags: u2;
@@ -674,8 +812,8 @@ type BootstrapMethods = {
 };
 
 type Path = {
-    typePathKind: u1;
-    typeArgumentIndex: u1;
+  typePathKind: u1;
+  typeArgumentIndex: u1;
 };
 
 type TypePath = {
@@ -683,7 +821,7 @@ type TypePath = {
   path: Path[];
 };
 
-type TargetInfo = 
+type TargetInfo =
   TypeParameterTarget |
   SuperTypeTarget |
   TypeParameterBoundTarget |

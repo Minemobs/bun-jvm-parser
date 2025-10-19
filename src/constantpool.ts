@@ -45,7 +45,11 @@ function readConstantPool(br: ByteReader, tag: ConstantPoolTypes): ConstantPool[
     case ConstantPoolTypes.methodType:
       return { tag, descriptorIndex: br.getUint16() } as ConstantMethodTypeInfo;
     case ConstantPoolTypes.invokeDynamic:
-      return { tag, bootstrapMethodAttrIndex: br.getUint16(), nameAndTypeIndex: br.getUint16() } as ConstantInvokeDynamicInfo;
+    case ConstantPoolTypes.dynamic:
+      return { tag, bootstrapMethodAttrIndex: br.getUint16(), nameAndTypeIndex: br.getUint16() } as ConstantInvokeDynamicInfo | ConstantDynamicInfo;
+    case ConstantPoolTypes.module:
+    case ConstantPoolTypes.package:
+      return { tag, nameIndex: br.getUint16() } as ConstantModuleInfo | ConstantPackageInfo;
     default:
       throw Error("Unexpected tag: " + tag + " at byte offset: " + (br.offset - 1));
   }

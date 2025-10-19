@@ -3,7 +3,7 @@ export type u2 = number;
 export type u4 = number;
 
 // Only for documentation purposes, doesn't do anything
-export type ArrayWithLength<T, _max> = Array<T>;
+export type ArrayWithLength<T, _max extends number> = Array<T>;
 export type Between<T, _minInclusive, _maxInclusive> = T;
 
 export class ByteReader {
