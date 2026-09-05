@@ -1,7 +1,5 @@
 import type { ByteReader, u1, u2, u4 } from "./index";
 
-export type ConstantPool = Array<CPInfo<number> & Record<string, number | number[]>>;
-
 export function parseConstantPool(br: ByteReader, count: number): ConstantPool {
   const array: ConstantPool = [];
   for (let i = 0; i < count - 1; i++) {
@@ -18,34 +16,34 @@ export function parseConstantPool(br: ByteReader, count: number): ConstantPool {
 function readConstantPool(br: ByteReader, tag: ConstantPoolTypes): ConstantPool[number] {
   switch(tag) {
     case ConstantPoolTypes.class:
-      return { tag, nameIndex: br.getUint16() } as ConstantClassInfo;
+      return { tag, nameIndex: br.getUint16() };
     case ConstantPoolTypes.fieldref:
-      return { tag, classIndex: br.getUint16(), nameAndTypeIndex: br.getUint16() } as FieldRefInfo;
+      return { tag, classIndex: br.getUint16(), nameAndTypeIndex: br.getUint16() };
     case ConstantPoolTypes.methodref:
-      return { tag, classIndex: br.getUint16(), nameAndTypeIndex: br.getUint16() } as ConstantInfoMethodRef;
+      return { tag, classIndex: br.getUint16(), nameAndTypeIndex: br.getUint16() };
     case ConstantPoolTypes.interfaceMethodref:
-      return { tag, classIndex: br.getUint16(), nameAndTypeIndex: br.getUint16() } as ConstantInterfanceMethodRefInfo;
+      return { tag, classIndex: br.getUint16(), nameAndTypeIndex: br.getUint16() };
     case ConstantPoolTypes.string:
-      return { tag, stringIndex: br.getUint16() } as ConstantStringInfo;
+      return { tag, stringIndex: br.getUint16() };
     case ConstantPoolTypes.integer:
-      return { tag, bytes: br.getUint32() } as ConstantIntergerInfo;
+      return { tag, bytes: br.getUint32() };
     case ConstantPoolTypes.float:
-      return { tag, bytes: br.getUint32() } as ConstantFloatInfo;
+      return { tag, bytes: br.getUint32() };
     case ConstantPoolTypes.long:
-      return { tag, highBytes: br.getUint32(), lowBytes: br.getUint32() } as ConstantLongInfo;
+      return { tag, highBytes: br.getUint32(), lowBytes: br.getUint32() };
     case ConstantPoolTypes.double:
-      return { tag, highBytes: br.getUint32(), lowBytes: br.getUint32() } as ConstantDoubleInfo;
+      return { tag, highBytes: br.getUint32(), lowBytes: br.getUint32() };
     case ConstantPoolTypes.nameAndType:
-      return { tag, nameIndex: br.getUint16(), descriptorIndex: br.getUint16() } as ConstantNameAndTypeInfo;
+      return { tag, nameIndex: br.getUint16(), descriptorIndex: br.getUint16() };
     case ConstantPoolTypes.utf8:
       const length = br.getUint16();
-      return { tag, length, bytes: br.getUint8s(length) } as ConstantUtf8Info;
+      return { tag, length, bytes: br.getUint8s(length) };
     case ConstantPoolTypes.methodHandle:
-      return { tag, referenceKind: br.getUint8(), referenceIndex: br.getUint16() } as ConstantMethodHandleInfo;
+      return { tag, referenceKind: br.getUint8(), referenceIndex: br.getUint16() };
     case ConstantPoolTypes.methodType:
-      return { tag, descriptorIndex: br.getUint16() } as ConstantMethodTypeInfo;
+      return { tag, descriptorIndex: br.getUint16() };
     case ConstantPoolTypes.invokeDynamic:
-      return { tag, bootstrapMethodAttrIndex: br.getUint16(), nameAndTypeIndex: br.getUint16() } as ConstantInvokeDynamicInfo;
+      return { tag, bootstrapMethodAttrIndex: br.getUint16(), nameAndTypeIndex: br.getUint16() };
     default:
       throw Error("Unexpected tag: " + tag + " at byte offset: " + (br.offset - 1));
   }
@@ -149,3 +147,25 @@ export type ConstantInvokeDynamicInfo = CPInfo<ConstantPoolTypes.invokeDynamic> 
 };
 
 export type ConstantDynamicInfo = CPInfo<ConstantPoolTypes.dynamic> & Omit<ConstantInvokeDynamicInfo, "tag">;
+
+// export type ConstantPool = Array<CPInfo<number> & Record<string, number | number[]>>;
+export type ConstantPool = Array<
+ CPInfo<u1>
+ | ConstantInfoMethodRef
+ | ConstantClassInfo
+ | ConstantModuleInfo
+ | ConstantPackageInfo
+ | FieldRefInfo
+ | ConstantInterfanceMethodRefInfo
+ | ConstantStringInfo
+ | ConstantIntergerInfo
+ | ConstantFloatInfo
+ | ConstantLongInfo
+ | ConstantDoubleInfo
+ | ConstantNameAndTypeInfo
+ | ConstantUtf8Info
+ | ConstantMethodHandleInfo
+ | ConstantMethodTypeInfo
+ | ConstantInvokeDynamicInfo
+ | ConstantDynamicInfo
+>;

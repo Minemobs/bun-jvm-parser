@@ -1,12 +1,11 @@
 import { readFileSync } from "node:fs";
+import { argv } from "node:process";
 import {
   type CodeAttribute, type ConstantUtf8Info,
   parseConstantPool, parseAttributes, parseFields, getInstructions, parseMethods, parseInterfaces,
   ByteReader, toVersion, toStringAccessFlags, getClassName, fieldAccessFlagsToString, methodAccessFlagsToString,
-  type Attributes
-} from "./src/index";
-import { argv } from "node:process";
-import type { u2 } from "./src/types.js";
+  type Attributes, type u2
+} from "./index";
 
 function readBytes(buffer: ArrayBufferLike) {
   const dv = new DataView(buffer);
@@ -28,7 +27,7 @@ function readBytes(buffer: ArrayBufferLike) {
   const attributesCount = br.getUint16();
   const attributes = parseAttributes(br, attributesCount, constantPool);
 
-  if(Bun.argv[3] === "full") {
+  if (argv[3] === "full") {
     console.log(`
       Magic: ${magic}
       MinorVersion: ${minor}
@@ -52,10 +51,18 @@ function readBytes(buffer: ArrayBufferLike) {
     console.table(attributes);
   }
 
-  const instructions = methods.flatMap(it => it.attributes
-      .filter(it => Buffer.from((constantPool[it.attributeNameIndex - 1] as ConstantUtf8Info).bytes).toString("utf8") === "Code")
-      .map(att => [it.nameIndex, att] as [u2, Attributes[number]])
-    ).map(it => { return { function_name: Buffer.from((constantPool[it[0] - 1] as ConstantUtf8Info).bytes).toString("utf8"), attributes: getInstructions(it[1] as CodeAttribute) } });
+  const instructions =
+    methods.flatMap(
+      it => it.attributes
+        .filter(it => Buffer.from((constantPool[it.attributeNameIndex - 1] as ConstantUtf8Info).bytes).toString("utf8") === "Code")
+        .map(att => [it.nameIndex, att] as [u2, Attributes[number]])
+    )
+      .map(([nameIndex, attr]) => {
+        return {
+          function_name: Buffer.from((constantPool[nameIndex - 1] as ConstantUtf8Info).bytes).toString("utf8"),
+          attributes: getInstructions(attr as CodeAttribute)
+        }
+      });
   console.log(JSON.stringify(instructions, undefined, "  "));
 }
 

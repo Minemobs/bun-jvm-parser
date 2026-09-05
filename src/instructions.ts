@@ -1,4 +1,4 @@
-import type { CodeAttribute, u1, u2, u4 } from "./index";
+import type { CodeAttribute, u1, u2, u4 } from "../index";
 
 export type Instruction<T extends keyof _instructions> = _instructions[T];
 
@@ -30,11 +30,7 @@ function readInt16(code: number[], index: number): number {
 }
 
 function getInstruction(code: number[], index: number): [number, BaseInstruction] {
-  // const name = Buffer.from((cp[index] as ConstantUtf8Info).bytes).toString("utf8");
   const name = instructionToString(code[index]);
-  if(name === "nop") {
-    console.log("Nop at index:", index);
-  }
   switch (name) {
     case "nop":
     case "aconst_null":
