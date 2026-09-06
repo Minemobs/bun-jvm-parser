@@ -4,7 +4,8 @@ import {
   type CodeAttribute, type ConstantUtf8Info,
   parseConstantPool, parseAttributes, parseFields, getInstructions, parseMethods, parseInterfaces,
   ByteReader, toVersion, toStringAccessFlags, getClassName, fieldAccessFlagsToString, methodAccessFlagsToString,
-  type Attributes, type u2
+  type Attributes, type u2,
+  ConstantPoolTypes
 } from "./index";
 
 function readBytes(buffer: ArrayBufferLike) {
@@ -40,7 +41,12 @@ function readBytes(buffer: ArrayBufferLike) {
       fieldsCount: ${fieldsCount}
       `.split("\n").map(it => it.trim()).filter(it => it.length !== 0).join("\n"))
     console.log('-'.repeat(5) + "Constant pool" + '-'.repeat(5));
-    console.table(constantPool);
+    console.table(constantPool.map(it => {
+      if (it.tag === ConstantPoolTypes.utf8)
+        return Buffer.from(it.bytes).toString("utf8");
+      else
+        return it;
+    }));
     console.log('-'.repeat(5) + "interfaces" + '-'.repeat(5));
     console.table(interfaces.map(it => constantPool[it.nameIndex - 1] as ConstantUtf8Info).map(it => Buffer.from(it.bytes).toString("utf8")));
     console.log('-'.repeat(5) + "fields" + '-'.repeat(5));
@@ -66,7 +72,5 @@ function readBytes(buffer: ArrayBufferLike) {
   console.log(JSON.stringify(instructions, undefined, "  "));
 }
 
-
-//const file = await Bun.file(Bun.argv[2]).arrayBuffer();
 const file = new Uint8Array(readFileSync(argv[2])).buffer;
 readBytes(file);

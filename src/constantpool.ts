@@ -1,4 +1,4 @@
-import type { ByteReader, u1, u2, u4 } from "./index";
+import type { ByteReader, u1, u2, u4 } from "../index";
 
 export function parseConstantPool(br: ByteReader, count: number): ConstantPool {
   const array: ConstantPool = [];
@@ -148,9 +148,8 @@ export type ConstantInvokeDynamicInfo = CPInfo<ConstantPoolTypes.invokeDynamic> 
 
 export type ConstantDynamicInfo = CPInfo<ConstantPoolTypes.dynamic> & Omit<ConstantInvokeDynamicInfo, "tag">;
 
-// export type ConstantPool = Array<CPInfo<number> & Record<string, number | number[]>>;
 export type ConstantPool = Array<
- CPInfo<u1>
+ CPInfo<0>
  | ConstantInfoMethodRef
  | ConstantClassInfo
  | ConstantModuleInfo
