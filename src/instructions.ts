@@ -1,18 +1,16 @@
 import type { CodeAttribute, u1, u2, u4 } from "../index";
 
-export type Instruction<T extends keyof _instructions> = _instructions[T];
-
 export function instructionsToString(instructions: Instructions[]): string[] {
   const buff: string[] = [];
   for (const instruction of instructions) {
-    buff.push(instructionToString(instruction));
+    buff.push(instructionNameToString(instruction));
   }
   return buff;
 }
 
-export function getInstructions(attr: CodeAttribute): BaseInstruction[] {
+export function getInstructions(attr: CodeAttribute): InstructionType[] {
   const code = attr.code;
-  const instructions: BaseInstruction[] = [];
+  const instructions: InstructionType[] = [];
   for (let i = 0; i < code.length; i++) {
     const [newIndex, instruction] = getInstruction(code, i);
     instructions.push(instruction);
@@ -29,8 +27,8 @@ function readInt16(code: number[], index: number): number {
   return (code[index] << 8) | code[index + 1];
 }
 
-function getInstruction(code: number[], index: number): [number, BaseInstruction] {
-  const name = instructionToString(code[index]);
+function getInstruction(code: number[], index: number): [number, InstructionType] {
+  const name = instructionNameToString(code[index]);
   switch (name) {
     case "nop":
     case "aconst_null":
@@ -182,16 +180,16 @@ function getInstruction(code: number[], index: number): [number, BaseInstruction
     case "breakpoint":
     case "impdep1":
     case "impdep2":
-      return [index, { name } as BaseInstruction];
+      return [index, { name }];
     case "bipush":
-      return [ index + 1, { name, byte: code[index + 1]} as BiPushInstruction];
+      return [index + 1, { name, byte: code[index + 1] } as BiPushInstruction];
     case "sipush":
-      return [ index + 2, { name, byte: readInt16(code, index + 1)} as SiPushInstruction];
+      return [index + 2, { name, byte: readInt16(code, index + 1) } as SiPushInstruction];
     case "ldc":
-      return [ index + 1, { name, index: code[index + 1]} as LdcInstruction];
+      return [index + 1, { name, index: code[index + 1] } as LdcInstruction];
     case "ldc_w":
     case "ldc2_w":
-      return [ index + 2, { name, indexbyte: readInt16(code, index + 1)} as Ldc_WInstruction];
+      return [index + 2, { name, indexbyte: readInt16(code, index + 1) } as Ldc_WInstruction];
     case "iload":
     case "lload":
     case "fload":
@@ -202,9 +200,9 @@ function getInstruction(code: number[], index: number): [number, BaseInstruction
     case "fstore":
     case "dstore":
     case "astore":
-      return [ index + 1, { name, index: code[index + 1]} as ILoadInstruction];
+      return [index + 1, { name, index: code[index + 1] } as ILoadInstruction];
     case "iinc":
-      return [ index + 2, { name, index: code[index + 1], const: code[index + 2]} as IIncInstruction];
+      return [index + 2, { name, index: code[index + 1], const: code[index + 2] } as IIncInstruction];
     case "ifeq":
     case "ifne":
     case "iflt":
@@ -223,7 +221,7 @@ function getInstruction(code: number[], index: number): [number, BaseInstruction
     case "jsr":
     case "ifnull":
     case "ifnonnull":
-      return [index + 2, { name, branchbyte: readInt16(code, index + 1)} as IfEqInstruction];
+      return [index + 2, { name, branchbyte: readInt16(code, index + 1) } as IfEqInstruction];
     case "ret":
       return [index + 1, { name, index: code[index + 1] } as RetInstruction];
     case "tableswitch":
@@ -241,34 +239,34 @@ function getInstruction(code: number[], index: number): [number, BaseInstruction
     case "anewarray":
     case "checkcast":
     case "instanceof":
-      return [ index + 2, { name, indexbyte: readInt16(code, index + 1) } as GetStaticInstruction];
+      return [index + 2, { name, indexbyte: readInt16(code, index + 1) } as GetStaticInstruction];
     case "invokeinterface":
-      return [ index + 4, { name, indexbyte: readInt16(code, index + 1), count: code[index + 3]} as InvokeInterfaceInstruction];
+      return [index + 4, { name, indexbyte: readInt16(code, index + 1), count: code[index + 3] } as InvokeInterfaceInstruction];
     case "invokedynamic":
-      return [ index + 4, { name, indexbyte: readInt16(code, index + 1)} as InvokeInterfaceInstruction];
+      return [index + 4, { name, indexbyte: readInt16(code, index + 1) } as InvokeDynamicInstruction];
     case "newarray":
-      return [ index + 1, { name, atype: code[index + 1] } as NewArrayInstruction];
+      return [index + 1, { name, atype: code[index + 1] } as NewArrayInstruction];
     case "wide":
       return getWideInstruction(name, index, code);
     case "multianewarray":
-      return [ index + 3, { name, indexbyte: readInt16(code, index + 1), dimensions: code[index + 3] } as MultiANewArrayInstruction];
+      return [index + 3, { name, indexbyte: readInt16(code, index + 1), dimensions: code[index + 3] } as MultiANewArrayInstruction];
     case "goto_w":
     case "jsr_w":
-      return [ index + 4, { name, branchbyte: readInt32(code, index + 1) } as Goto_WInstruction];
+      return [index + 4, { name, branchbyte: readInt32(code, index + 1) } as Goto_WInstruction];
     default: throw Error("Unknown instruction: " + name, { cause: { name, code, index } });
   }
 }
 
-function getWideInstruction(name: string, index: number, code: number[]): [number, WideInstruction] {
-   const opcode = code[index + 1];
-   if(opcode === Instructions.IINC) {
-     return [index + 5, { name, iinc: 132, index: readInt16(code, index + 2), const: readInt16(code, index + 4)}];
-   } else {
-     return [index + 3, { name, opcode, index: readInt16(code, index + 2) }];
-   }
+function getWideInstruction(name: "wide", index: number, code: number[]): [number, WideInstruction] {
+  const opcode = code[index + 1];
+  if (opcode === Instructions.IINC) {
+    return [index + 5, { name, iinc: 132, index: readInt16(code, index + 2), const: readInt16(code, index + 4) }];
+  } else {
+    return [index + 3, { name, opcode, index: readInt16(code, index + 2) }];
+  }
 }
 
-function getTableSwitchInstruction(name: string, index: number, code: number[]): [number, TableSwitchInstruction] {
+function getTableSwitchInstruction(name: "tableswitch", index: number, code: number[]): [number, TableSwitchInstruction] {
   const startsAt = 4 - ((index + 1) % 4);
   let i = index + startsAt;
   const defaultByte = readInt32(code, i);
@@ -279,14 +277,14 @@ function getTableSwitchInstruction(name: string, index: number, code: number[]):
   i += 4;
   const offsetsNum = highByte - lowByte + 1;
   const offsets: u4[] = [];
-  for(let j = 0; j < offsetsNum; j++) {
+  for (let j = 0; j < offsetsNum; j++) {
     offsets[j] = readInt32(code, i);
     i += 4;
   }
-  return [ i - 1, { name, padding: 0, defaultByte, highByte, lowByte, jumpOffsets: offsets }];
+  return [i - 1, { name, padding: 0, defaultByte, highByte, lowByte, jumpOffsets: offsets }];
 }
 
-function getLookupSwitchInstruction(name: string, index: number, code: number[]): [number, LookupSwitchInstruction] {
+function getLookupSwitchInstruction(name: "lookupswitch", index: number, code: number[]): [number, LookupSwitchInstruction] {
   const startsAt = 4 - ((index + 1) % 4);
   let i = index + startsAt + 1;
   const defaultByte = readInt32(code, i);
@@ -294,69 +292,72 @@ function getLookupSwitchInstruction(name: string, index: number, code: number[])
   const npairs = readInt32(code, i);
   i += 4;
   const offsets: LookupSwitchInstruction["matchOffsetPairs"] = [];
-  for(let j = 0; j < npairs; j++) {
+  for (let j = 0; j < npairs; j++) {
     const value = readInt32(code, i);
     i += 4;
     const offset = readInt32(code, i);
     i += 4;
     offsets.push({ matchCase: value, offset });
   }
-  return [ i - 1, { name, padding: 0, defaultByte, npairs, matchOffsetPairs: offsets }];
+  return [i - 1, { name, padding: 0, defaultByte, npairs, matchOffsetPairs: offsets }];
 }
 
-type BaseInstruction = { name: string };
-type BiPushInstruction = { byte: u1 } & BaseInstruction;
-type SiPushInstruction = { byte: u2 } & BaseInstruction;
-type LdcInstruction = { index: u1 } & BaseInstruction;
-type Ldc_WInstruction = { indexbyte: u2 } & BaseInstruction;
-type Ldc2_WInstruction = { indexbyte: u2 } & BaseInstruction;
-type ILoadInstruction = { index: u1 } & BaseInstruction;
-type LLoadInstruction = { index: u1 } & BaseInstruction;
-type FLoadInstruction = { index: u1 } & BaseInstruction;
-type DLoadInstruction = { index: u1 } & BaseInstruction;
-type ALoadInstruction = { index: u1 } & BaseInstruction;
-type IStoreInstruction = { index: u1 } & BaseInstruction;
-type LStoreInstruction = { index: u1 } & BaseInstruction;
-type FStoreInstruction = { index: u1 } & BaseInstruction;
-type DStoreInstruction = { index: u1 } & BaseInstruction;
-type AStoreInstruction = { index: u1 } & BaseInstruction;
-type IIncInstruction = { index: u1, const: u1 } & BaseInstruction;
-type IfEqInstruction = { branchbyte: u2 } & BaseInstruction;
-type IfNeInstruction = { branchbyte: u2 } & BaseInstruction;
-type IfLtInstruction = { branchbyte: u2 } & BaseInstruction;
-type IfGeInstruction = { branchbyte: u2 } & BaseInstruction;
-type IfGtInstruction = { branchbyte: u2 } & BaseInstruction;
-type IfLeInstruction = { branchbyte: u2 } & BaseInstruction;
-type If_ICmpEqInstruction = { branchbyte: u2 } & BaseInstruction;
-type If_ICmpNeInstruction = { branchbyte: u2 } & BaseInstruction;
-type If_ICmpLtInstruction = { branchbyte: u2 } & BaseInstruction;
-type If_ICmpGeInstruction = { branchbyte: u2 } & BaseInstruction;
-type If_ICmpGtInstruction = { branchbyte: u2 } & BaseInstruction;
-type If_ICmpLeInstruction = { branchbyte: u2 } & BaseInstruction;
-type If_ACmpEqInstruction = { branchbyte: u2 } & BaseInstruction;
-type If_ACmpNeInstruction = { branchbyte: u2 } & BaseInstruction;
-type GotoInstruction = { branchbyte: u2 } & BaseInstruction;
-type JsrInstruction = { branchbyte: u2 } & BaseInstruction;
-type RetInstruction = { index: u1 } & BaseInstruction;
-type GetStaticInstruction = { indexbyte: u2 } & BaseInstruction;
-type PutStaticInstruction = { indexbyte: u2 } & BaseInstruction;
-type GetFieldInstruction = { indexbyte: u2 } & BaseInstruction;
-type PutFieldInstruction = { indexbyte: u2 } & BaseInstruction;
-type InvokeVirtualInstruction = { indexbyte: u2 } & BaseInstruction;
-type InvokeSpecialInstruction = { indexbyte: u2 } & BaseInstruction;
-type InvokeStaticInstruction = { indexbyte: u2 } & BaseInstruction;
-type InvokeInterfaceInstruction = { indexbyte: u2, count: u1 } & BaseInstruction;
-type InvokeDynamicInstruction = { indexbyte: u2 } & BaseInstruction;
-type NewInstruction = { indexbyte: u2 } & BaseInstruction;
-type NewArrayInstruction = { atype: u1 } & BaseInstruction;
-type ANewArrayInstruction = { indexbyte: u2 } & BaseInstruction;
-type CheckCastInstruction = { indexbyte: u2 } & BaseInstruction;
-type InstanceofInstruction = { indexbyte: u2 } & BaseInstruction;
-type MultiANewArrayInstruction = { indexbyte: u2, dimensions: u1 } & BaseInstruction;
-type IfNullInstruction = { branchbyte: u2 } & BaseInstruction;
-type IfNonNullInstruction = { branchbyte: u2 } & BaseInstruction;
-type Goto_WInstruction = { branchbyte: u4 } & BaseInstruction;
-type Jsr_WInstruction = { branchbyte: u4 } & BaseInstruction;
+type BaseInstruction
+  <T extends ReturnType<typeof instructionNameToString> =
+    "nop" | "aconst_null" | "iconst_m1" | "iconst_0" | "iconst_1" | "iconst_2" | "iconst_3" | "iconst_4" | "iconst_5" | "lconst_0" | "lconst_1" | "fconst_0" | "fconst_1" | "fconst_2" | "dconst_0" | "dconst_1" | "iload_0" | "iload_1" | "iload_2" | "iload_3" | "lload_0" | "lload_1" | "lload_2" | "lload_3" | "fload_0" | "fload_1" | "fload_2" | "fload_3" | "dload_0" | "dload_1" | "dload_2" | "dload_3" | "aload_0" | "aload_1" | "aload_2" | "aload_3" | "iaload" | "laload" | "faload" | "daload" | "aaload" | "baload" | "caload" | "saload" | "istore_0" | "istore_1" | "istore_2" | "istore_3" | "lstore_0" | "lstore_1" | "lstore_2" | "lstore_3" | "fstore_0" | "fstore_1" | "fstore_2" | "fstore_3" | "dstore_0" | "dstore_1" | "dstore_2" | "dstore_3" | "astore_0" | "astore_1" | "astore_2" | "astore_3" | "iastore" | "lastore" | "fastore" | "dastore" | "aastore" | "bastore" | "castore" | "sastore" | "pop" | "pop2" | "dup" | "dup_x1" | "dup_x2" | "dup2" | "dup2_x1" | "dup2_x2" | "swap" | "iadd" | "ladd" | "fadd" | "dadd" | "isub" | "lsub" | "fsub" | "dsub" | "imul" | "lmul" | "fmul" | "dmul" | "idiv" | "ldiv" | "fdiv" | "ddiv" | "irem" | "lrem" | "frem" | "drem" | "ineg" | "lneg" | "fneg" | "dneg" | "ishl" | "lshl" | "ishr" | "lshr" | "iushr" | "lushr" | "iand" | "land" | "ior" | "lor" | "ixor" | "lxor" | "i2l" | "i2f" | "i2d" | "l2i" | "l2f" | "l2d" | "f2i" | "f2l" | "f2d" | "d2i" | "d2l" | "d2f" | "i2b" | "i2c" | "i2s" | "lcmp" | "fcmpl" | "fcmpg" | "dcmpl" | "dcmpg" | "ireturn" | "lreturn" | "freturn" | "dreturn" | "areturn" | "return" | "arraylength" | "athrow" | "monitorenter" | "monitorexit" | "breakpoint" | "impdep1" | "impdep2"
+  > = { name: T };
+type BiPushInstruction = { byte: u1 } & BaseInstruction<"bipush">;
+type SiPushInstruction = { byte: u2 } & BaseInstruction<"sipush">;
+type LdcInstruction = { index: u1 } & BaseInstruction<"ldc">;
+type Ldc_WInstruction = { indexbyte: u2 } & BaseInstruction<"ldc_w">;
+type Ldc2_WInstruction = { indexbyte: u2 } & BaseInstruction<"ldc2_w">;
+type ILoadInstruction = { index: u1 } & BaseInstruction<"iload">;
+type LLoadInstruction = { index: u1 } & BaseInstruction<"lload">;
+type FLoadInstruction = { index: u1 } & BaseInstruction<"fload">;
+type DLoadInstruction = { index: u1 } & BaseInstruction<"dload">;
+type ALoadInstruction = { index: u1 } & BaseInstruction<"aload">;
+type IStoreInstruction = { index: u1 } & BaseInstruction<"istore">;
+type LStoreInstruction = { index: u1 } & BaseInstruction<"lstore">;
+type FStoreInstruction = { index: u1 } & BaseInstruction<"fstore">;
+type DStoreInstruction = { index: u1 } & BaseInstruction<"dstore">;
+type AStoreInstruction = { index: u1 } & BaseInstruction<"astore">;
+type IIncInstruction = { index: u1, const: u1 } & BaseInstruction<"iinc">;
+type IfEqInstruction = { branchbyte: u2 } & BaseInstruction<"ifeq">;
+type IfNeInstruction = { branchbyte: u2 } & BaseInstruction<"ifne">;
+type IfLtInstruction = { branchbyte: u2 } & BaseInstruction<"iflt">;
+type IfGeInstruction = { branchbyte: u2 } & BaseInstruction<"ifge">;
+type IfGtInstruction = { branchbyte: u2 } & BaseInstruction<"ifgt">;
+type IfLeInstruction = { branchbyte: u2 } & BaseInstruction<"ifle">;
+type If_ICmpEqInstruction = { branchbyte: u2 } & BaseInstruction<"if_icmpeq">;
+type If_ICmpNeInstruction = { branchbyte: u2 } & BaseInstruction<"if_icmpne">;
+type If_ICmpLtInstruction = { branchbyte: u2 } & BaseInstruction<"if_icmplt">;
+type If_ICmpGeInstruction = { branchbyte: u2 } & BaseInstruction<"if_icmpge">;
+type If_ICmpGtInstruction = { branchbyte: u2 } & BaseInstruction<"if_icmpgt">;
+type If_ICmpLeInstruction = { branchbyte: u2 } & BaseInstruction<"if_icmple">;
+type If_ACmpEqInstruction = { branchbyte: u2 } & BaseInstruction<"if_acmpeq">;
+type If_ACmpNeInstruction = { branchbyte: u2 } & BaseInstruction<"if_acmpne">;
+type GotoInstruction = { branchbyte: u2 } & BaseInstruction<"goto">;
+type JsrInstruction = { branchbyte: u2 } & BaseInstruction<"jsr">;
+type RetInstruction = { index: u1 } & BaseInstruction<"ret">;
+type GetStaticInstruction = { indexbyte: u2 } & BaseInstruction<"getstatic">;
+type PutStaticInstruction = { indexbyte: u2 } & BaseInstruction<"putstatic">;
+type GetFieldInstruction = { indexbyte: u2 } & BaseInstruction<"getfield">;
+type PutFieldInstruction = { indexbyte: u2 } & BaseInstruction<"putfield">;
+type InvokeVirtualInstruction = { indexbyte: u2 } & BaseInstruction<"invokevirtual">;
+type InvokeSpecialInstruction = { indexbyte: u2 } & BaseInstruction<"invokespecial">;
+type InvokeStaticInstruction = { indexbyte: u2 } & BaseInstruction<"invokestatic">;
+type InvokeInterfaceInstruction = { indexbyte: u2, count: u1 } & BaseInstruction<"invokeinterface">;
+type InvokeDynamicInstruction = { indexbyte: u2 } & BaseInstruction<"invokedynamic">;
+type NewInstruction = { indexbyte: u2 } & BaseInstruction<"new">;
+type NewArrayInstruction = { atype: u1 } & BaseInstruction<"newarray">;
+type ANewArrayInstruction = { indexbyte: u2 } & BaseInstruction<"anewarray">;
+type CheckCastInstruction = { indexbyte: u2 } & BaseInstruction<"checkcast">;
+type InstanceofInstruction = { indexbyte: u2 } & BaseInstruction<"instanceof">;
+type MultiANewArrayInstruction = { indexbyte: u2, dimensions: u1 } & BaseInstruction<"multianewarray">;
+type IfNullInstruction = { branchbyte: u2 } & BaseInstruction<"ifnull">;
+type IfNonNullInstruction = { branchbyte: u2 } & BaseInstruction<"ifnonnull">;
+type Goto_WInstruction = { branchbyte: u4 } & BaseInstruction<"goto_w">;
+type Jsr_WInstruction = { branchbyte: u4 } & BaseInstruction<"jsr_w">;
 type TableSwitchInstruction = {
   /* Between 0-3 bytes of padding,
   * in order to know how much padding is necessary we have to check the
@@ -368,14 +369,17 @@ type TableSwitchInstruction = {
   lowByte: u4;
   highByte: u4;
   jumpOffsets: u4[]; // high - low + 1 number of bytes
-} & BaseInstruction;
-type WideInstruction = { opcode: u1, index: u2 } & BaseInstruction | { iinc: 132, index: u2, const: u2 } & BaseInstruction;
+} & BaseInstruction<"tableswitch">;
+type WideInstruction = { opcode: u1, index: u2 } & BaseInstruction<"wide"> | { iinc: 132, index: u2, const: u2 } & BaseInstruction<"wide">;
 type LookupSwitchInstruction = {
   padding: number; //same as tableswitch
   defaultByte: u4;
   npairs: u4;
   matchOffsetPairs: { matchCase: u4, offset: u4 }[];
-} & BaseInstruction;
+} & BaseInstruction<"lookupswitch">;
+
+export type InstructionType =
+  BaseInstruction | BiPushInstruction | SiPushInstruction | LdcInstruction | Ldc_WInstruction | Ldc2_WInstruction | ILoadInstruction | LLoadInstruction | FLoadInstruction | DLoadInstruction | ALoadInstruction | IStoreInstruction | LStoreInstruction | FStoreInstruction | DStoreInstruction | AStoreInstruction | IIncInstruction | IfEqInstruction | IfNeInstruction | IfLtInstruction | IfGeInstruction | IfGtInstruction | IfLeInstruction | If_ICmpEqInstruction | If_ICmpNeInstruction | If_ICmpLtInstruction | If_ICmpGeInstruction | If_ICmpGtInstruction | If_ICmpLeInstruction | If_ACmpEqInstruction | If_ACmpNeInstruction | GotoInstruction | JsrInstruction | RetInstruction | GetStaticInstruction | PutStaticInstruction | GetFieldInstruction | PutFieldInstruction | InvokeVirtualInstruction | InvokeSpecialInstruction | InvokeStaticInstruction | InvokeInterfaceInstruction | InvokeDynamicInstruction | NewInstruction | NewArrayInstruction | ANewArrayInstruction | CheckCastInstruction | InstanceofInstruction | MultiANewArrayInstruction | IfNullInstruction | IfNonNullInstruction | Goto_WInstruction | Jsr_WInstruction | TableSwitchInstruction | WideInstruction | LookupSwitchInstruction;
 
 type _instructions = {
   NOP: BaseInstruction;
@@ -793,7 +797,7 @@ export const enum Instructions {
   IMPDEP2 = 255
 };
 
-function instructionToString(instruction: Instructions): Lowercase<keyof _instructions> {
+function instructionNameToString(instruction: Instructions): Lowercase<keyof _instructions> {
   switch (instruction) {
     case Instructions.NOP: return "nop";
     case Instructions.ACONST_NULL: return "aconst_null";

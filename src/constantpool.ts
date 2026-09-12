@@ -14,7 +14,7 @@ export function parseConstantPool(br: ByteReader, count: number): ConstantPool {
 }
 
 function readConstantPool(br: ByteReader, tag: ConstantPoolTypes): ConstantPool[number] {
-  switch(tag) {
+  switch (tag) {
     case ConstantPoolTypes.class:
       return { tag, nameIndex: br.getUint16() };
     case ConstantPoolTypes.fieldref:
@@ -67,6 +67,29 @@ export const enum ConstantPoolTypes {
   dynamic = 17,
   module = 19,
   package = 20,
+}
+
+export function poolTagToString(tag: number) {
+  switch (tag) {
+    case 7: return "Class";
+    case 9: return "Fieldref";
+    case 10: return "Methodref";
+    case 11: return "InterfaceMethodref";
+    case 8: return "String";
+    case 3: return "Integer";
+    case 4: return "Float";
+    case 5: return "Long";
+    case 6: return "Double";
+    case 12: return "NameAndType";
+    case 1: return "Utf8";
+    case 15: return "MethodHandle";
+    case 16: return "MethodType";
+    case 18: return "InvokeDynamic";
+    case 17: return "Dynamic";
+    case 19: return "Module";
+    case 20: return "Package";
+    default: throw Error("Unknown tag");
+  }
 }
 
 export type CPInfo<T extends u1> = {
@@ -149,22 +172,22 @@ export type ConstantInvokeDynamicInfo = CPInfo<ConstantPoolTypes.invokeDynamic> 
 export type ConstantDynamicInfo = CPInfo<ConstantPoolTypes.dynamic> & Omit<ConstantInvokeDynamicInfo, "tag">;
 
 export type ConstantPool = Array<
- CPInfo<0>
- | ConstantInfoMethodRef
- | ConstantClassInfo
- | ConstantModuleInfo
- | ConstantPackageInfo
- | FieldRefInfo
- | ConstantInterfanceMethodRefInfo
- | ConstantStringInfo
- | ConstantIntergerInfo
- | ConstantFloatInfo
- | ConstantLongInfo
- | ConstantDoubleInfo
- | ConstantNameAndTypeInfo
- | ConstantUtf8Info
- | ConstantMethodHandleInfo
- | ConstantMethodTypeInfo
- | ConstantInvokeDynamicInfo
- | ConstantDynamicInfo
+  CPInfo<0>
+  | ConstantInfoMethodRef
+  | ConstantClassInfo
+  | ConstantModuleInfo
+  | ConstantPackageInfo
+  | FieldRefInfo
+  | ConstantInterfanceMethodRefInfo
+  | ConstantStringInfo
+  | ConstantIntergerInfo
+  | ConstantFloatInfo
+  | ConstantLongInfo
+  | ConstantDoubleInfo
+  | ConstantNameAndTypeInfo
+  | ConstantUtf8Info
+  | ConstantMethodHandleInfo
+  | ConstantMethodTypeInfo
+  | ConstantInvokeDynamicInfo
+  | ConstantDynamicInfo
 >;
